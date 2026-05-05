@@ -5,11 +5,19 @@ import type { Project } from '@/types'
 export function PublicView() {
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const [activeTab, setActiveTab] = useState<'roadmap' | 'details'>('roadmap')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadProjects = async () => {
       try {
+        // Initialize sample data if needed
+        try {
+          await fetch('/api/init', { method: 'POST' })
+        } catch (e) {
+          // Initialization may fail if data already exists, that's ok
+        }
+
         const data = await projectsApi.getAll()
         setProjects(data)
         if (data.length > 0) {
@@ -115,12 +123,35 @@ export function PublicView() {
             </div>
 
             <div className="mb-6 flex items-center gap-6 border-b border-white/8 text-sm">
-              <button className="relative pb-3 font-medium text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400">Roadmapa</button>
+              <button 
+                onClick={() => setActiveTab('roadmap')}
+                className={`relative pb-3 font-medium transition ${
+                  activeTab === 'roadmap' 
+                    ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                Roadmapa
+              </button>
+              <button 
+                onClick={() => setActiveTab('details')}
+                className={`pb-3 font-medium transition ${
+                  activeTab === 'details' 
+                    ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
+                    : 'text-slate-400 hover:text-slate-300'
+                }`}
+              >
+                Szczegóły
+              </button>
               <button className="pb-3 text-slate-400">GitHub</button>
             </div>
 
             {selectedProject ? (
-              <ProjectContent project={selectedProject} />
+              activeTab === 'roadmap' ? (
+                <RoadmapContent project={selectedProject} />
+              ) : (
+                <DetailsContent project={selectedProject} />
+              )
             ) : (
               <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-white/8 bg-white/[0.03]">
                 <p className="text-slate-400">Select a project to view</p>
@@ -133,7 +164,7 @@ export function PublicView() {
   )
 }
 
-function ProjectContent({ project }: { project: Project }) {
+function RoadmapContent({ project }: { project: Project }) {
   const [stages, setStages] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -165,24 +196,6 @@ function ProjectContent({ project }: { project: Project }) {
 
   return (
     <div className="space-y-6 pb-10">
-      <section className="rounded-3xl border border-white/8 bg-white/[0.03] p-4 sm:p-6 lg:p-7">
-        <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
-          <div className="flex items-center gap-4">
-            <div className="grid h-16 w-16 place-items-center rounded-2xl bg-gradient-to-br from-violet-500 to-indigo-500 text-3xl shadow-lg shadow-violet-500/20">
-              {project.icon}
-            </div>
-            <div>
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{project.name}</h1>
-              <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-400">{project.description}</p>
-            </div>
-          </div>
-          <a href="#" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-black/20 px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.05]">
-            <span>GitHub</span>
-            <span>↗</span>
-          </a>
-        </div>
-      </section>
-
       {/* Roadmap Timeline */}
       <div className="space-y-4">
         {stages.map((stage, index) => (
@@ -192,11 +205,11 @@ function ProjectContent({ project }: { project: Project }) {
               <div className="flex flex-col items-center">
                 <div className={`grid h-12 w-12 place-items-center rounded-full text-lg font-semibold ring-1 ring-white/10 ${
                   stage.status === 'completed' ? 'bg-green-600 text-white' :
-                  stage.status === 'in-progress' ? 'bg-blue-600 text-white' :
+                  stage.status === 'in-progress' ? 'bg-amber-600 text-white' :
                   stage.status === 'blocked' ? 'bg-orange-500 text-white' :
                   'bg-slate-700 text-slate-400'
                 }`}>
-                  {stage.icon || (index + 1)}
+                  {stage.status === 'completed' ? '✓' : stage.status === 'in-progress' ? '●' : stage.icon || (index + 1)}
                 </div>
                 {index < stages.length - 1 && (
                   <div className="w-px h-12 bg-gradient-to-b from-white/25 to-white/5 my-2"></div>
@@ -214,13 +227,13 @@ function ProjectContent({ project }: { project: Project }) {
                     <div className="ml-4 text-right">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
                         stage.status === 'completed' ? 'bg-green-900 text-green-200' :
-                        stage.status === 'in-progress' ? 'bg-blue-900 text-blue-200' :
+                        stage.status === 'in-progress' ? 'bg-amber-900 text-amber-200' :
                         stage.status === 'blocked' ? 'bg-orange-900 text-orange-200' :
                         'bg-slate-800 text-slate-300'
                       }`}>
                         {stage.status === 'completed' && 'Zakończone'}
                         {stage.status === 'in-progress' && 'W trakcie'}
-                        {stage.status === 'blocked' && 'Zablokowane'}
+                        {stage.status === 'blocked' && 'W trakcie'}
                         {stage.status === 'pending' && 'Oczekujące'}
                       </span>
                       {stage.status === 'in-progress' && stage.progress && (
@@ -237,6 +250,164 @@ function ProjectContent({ project }: { project: Project }) {
 
       {/* Footer */}
       <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-12 pt-6 border-t border-white/8">
+        <span>🌐</span>
+        <span>Każdy może przeglądać postępy</span>
+      </div>
+    </div>
+  )
+}
+
+function DetailsContent({ project }: { project: Project }) {
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return { label: 'Aktywny', color: 'text-green-400 bg-green-900/30' }
+      case 'completed':
+        return { label: 'Ukończony', color: 'text-blue-400 bg-blue-900/30' }
+      case 'archived':
+        return { label: 'Zarchiwizowany', color: 'text-slate-400 bg-slate-800/30' }
+      default:
+        return { label: 'Nieznany', color: 'text-slate-400 bg-slate-800/30' }
+    }
+  }
+
+  const getPriorityLabel = (priority: string) => {
+    switch (priority) {
+      case 'high':
+        return { label: 'Wysoki', color: 'text-red-400 bg-red-900/30' }
+      case 'medium':
+        return { label: 'Średni', color: 'text-yellow-400 bg-yellow-900/30' }
+      case 'low':
+        return { label: 'Niski', color: 'text-green-400 bg-green-900/30' }
+      default:
+        return { label: 'Nieznany', color: 'text-slate-400 bg-slate-800/30' }
+    }
+  }
+
+  const statusStyle = getStatusLabel(project.status)
+  const priorityStyle = getPriorityLabel(project.priority)
+
+  return (
+    <div className="space-y-6 pb-10">
+      {/* Description Section */}
+      <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10">
+            <span className="text-lg">📄</span>
+          </span>
+          <h3 className="text-lg font-semibold">Opis</h3>
+        </div>
+        <p className="text-slate-300 leading-relaxed">{project.description}</p>
+      </div>
+
+      {/* Status & Priority Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        {/* Status */}
+        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">✓</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Status</span>
+          </div>
+          <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusStyle.color}`}>
+            {statusStyle.label}
+          </div>
+          <p className="text-xs text-slate-500 mt-2">{new Date(project.startDate).toLocaleDateString('pl-PL')}</p>
+        </div>
+
+        {/* Progress */}
+        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">📊</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Postęp ogólny</span>
+          </div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-2xl font-bold text-white">{project.progress}%</span>
+          </div>
+          <div className="w-full bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
+            <div 
+              className="bg-gradient-to-r from-violet-500 to-indigo-500 h-full rounded-full transition-all"
+              style={{ width: `${project.progress}%` }}
+            ></div>
+          </div>
+        </div>
+
+        {/* Last Update */}
+        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-lg">🕐</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Ostatnia aktualizacja</span>
+          </div>
+          <p className="text-sm text-slate-300">{new Date(project.lastUpdate).toLocaleDateString('pl-PL')}</p>
+          <p className="text-xs text-slate-500 mt-1">{new Date(project.lastUpdate).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</p>
+        </div>
+      </div>
+
+      {/* Team & Technologies Row */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Team */}
+        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">👥</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Zespół</span>
+          </div>
+          <p className="text-2xl font-bold text-white">{project.teamSize}</p>
+          <p className="text-xs text-slate-500 mt-1">członków zespołu</p>
+        </div>
+
+        {/* Priority */}
+        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="text-lg">⚡</span>
+            <span className="text-xs font-semibold text-slate-400 uppercase">Priorytet</span>
+          </div>
+          <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${priorityStyle.color}`}>
+            {priorityStyle.label}
+          </div>
+        </div>
+      </div>
+
+      {/* Technologies */}
+      {project.technologies && project.technologies.length > 0 && (
+        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-lg">💻</span>
+            <h3 className="text-lg font-semibold">Technologie</h3>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {project.technologies.map((tech) => (
+              <span 
+                key={tech}
+                className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-300 border border-white/20"
+              >
+                {tech}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Project Goals */}
+      {project.goals && project.goals.length > 0 && (
+        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <span className="text-lg">🎯</span>
+            <h3 className="text-lg font-semibold">Cele projektu</h3>
+          </div>
+          <ul className="space-y-2">
+            {project.goals.map((goal, index) => (
+              <li key={index} className="flex items-start gap-3 text-slate-300">
+                <span className="flex-shrink-0 w-5 h-5 rounded-full border border-white/30 flex items-center justify-center mt-0.5">
+                  <span className="w-2 h-2 rounded-full bg-white/60"></span>
+                </span>
+                <span>{goal}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Footer */}
+      <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-8 pt-6 border-t border-white/8">
         <span>🌐</span>
         <span>Każdy może przeglądać postępy</span>
       </div>
