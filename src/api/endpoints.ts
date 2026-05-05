@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ApiResponse, Project, Stage } from '@/types'
+import type { ApiResponse, Project, Stage, ProjectCreatePayload, StageCreatePayload } from '@/types'
 
 // Projects API
 export const projectsApi = {
@@ -13,7 +13,7 @@ export const projectsApi = {
     return data.data!
   },
 
-  create: async (project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project> => {
+  create: async (project: ProjectCreatePayload): Promise<Project> => {
     const { data } = await apiClient.post<ApiResponse<Project>>('/api/projects', project)
     return data.data!
   },
@@ -35,7 +35,7 @@ export const stagesApi = {
     return data.data || []
   },
 
-  create: async (projectId: string, stage: Omit<Stage, 'id' | 'createdAt' | 'updatedAt'>): Promise<Stage> => {
+  create: async (projectId: string, stage: StageCreatePayload): Promise<Stage> => {
     const { data } = await apiClient.post<ApiResponse<Stage>>(`/api/projects/${projectId}/stages`, stage)
     return data.data!
   },
