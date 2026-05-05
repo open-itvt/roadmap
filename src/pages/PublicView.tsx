@@ -140,7 +140,7 @@ export function PublicView() {
   return (
     <div className="min-h-screen bg-[#0a0d12] text-slate-100 flex flex-col lg:flex-row">
       {/* Sidebar */}
-      <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-white/8 bg-[#0b1118]">
+      <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-white/6 bg-[#0b1118]">
         <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-white/6">
           <div className="flex items-center gap-3">
             <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25">
@@ -173,8 +173,8 @@ export function PublicView() {
           ))}
         </div>
 
-        <div className="border-t border-white/8 p-3 lg:p-4 mt-auto">
-          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 lg:p-4">
+        <div className="border-t border-white/6 p-3 lg:p-4 mt-auto">
+          <div className="rounded-2xl border border-white/6 bg-white/[0.03] p-3 lg:p-4">
             <div className="text-sm font-medium text-white">Projekt publiczny</div>
             <div className="mt-1 text-xs leading-5 text-slate-400">Każdy może przeglądać postępy</div>
           </div>
@@ -190,7 +190,7 @@ export function PublicView() {
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Roadmapa</h1>
               <p className="mt-1 text-sm text-slate-400">Śledź postęp prac dla wybranego projektu</p>
             </div>
-            <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
+            <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/6 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
               <span>GitHub</span>
               <FaExternalLinkAlt className="text-sm" />
             </a>
@@ -198,8 +198,8 @@ export function PublicView() {
 
           {/* Project Selector Mobile */}
           {projects.length > 0 && (
-            <div className="mb-5 rounded-2xl border border-white/8 bg-white/[0.03] p-3 lg:hidden">
-              <div className="flex items-center justify-between rounded-xl border border-white/8 bg-black/20 px-3 py-2.5">
+            <div className="mb-5 rounded-2xl border border-white/6 bg-white/[0.03] p-3 lg:hidden">
+              <div className="flex items-center justify-between rounded-xl border border-white/6 bg-black/20 px-3 py-2.5">
                 <div className="flex items-center gap-3">
                   <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg"><FaCode /></span>
                   <div>
@@ -213,7 +213,7 @@ export function PublicView() {
           )}
 
           {/* Tabs */}
-          <div className="mb-6 flex items-center gap-6 border-b border-white/8 text-sm">
+          <div className="mb-6 flex items-center gap-6 border-b border-white/6 text-sm">
             <button 
               onClick={() => setActiveTab('roadmap')}
               className={`relative pb-3 font-medium transition ${
@@ -245,7 +245,7 @@ export function PublicView() {
               <DetailsContent project={selectedProject} />
             )
           ) : (
-            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/8 bg-white/[0.03]">
+            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/6 bg-white/[0.03]">
               <p className="text-slate-400">Wybierz projekt z menu</p>
             </div>
           )}
@@ -287,7 +287,7 @@ function RoadmapContent({ project }: { project: Project }) {
 
   if (stages.length === 0) {
     return (
-      <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/8 bg-white/[0.03]">
+      <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/6 bg-white/[0.03]">
         <p className="text-slate-400">Brak etapów dla tego projektu</p>
       </div>
     )
@@ -326,7 +326,7 @@ function RoadmapContent({ project }: { project: Project }) {
 
               {/* Stage card */}
               <div className="flex-1 pb-4">
-                <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] transition hover:border-white/12">
+                <div className="rounded-2xl border-1 border-white/6 bg-[#0f141b] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] transition hover:border-white/8">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold mb-1">{stage.name}</h3>
@@ -357,7 +357,7 @@ function RoadmapContent({ project }: { project: Project }) {
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-12 pt-6 border-t border-white/8">
+      <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-12 pt-6 border-t border-white/6">
         <FaGlobe />
         <span>Każdy może przeglądać postępy</span>
       </div>
@@ -398,7 +398,7 @@ function DetailsContent({ project }: { project: Project }) {
   return (
     <div className="space-y-6 pb-10">
       {/* Description Section */}
-      <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-6">
+      <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-6">
           <div className="flex items-center gap-3 mb-4">
             <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10">
               <FaFileAlt />
@@ -411,7 +411,7 @@ function DetailsContent({ project }: { project: Project }) {
       {/* Status & Priority Row */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         {/* Status */}
-        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-2">
             <FaCheckCircle />
             <span className="text-xs font-semibold text-slate-400 uppercase">Status</span>
@@ -423,7 +423,7 @@ function DetailsContent({ project }: { project: Project }) {
         </div>
 
         {/* Progress */}
-        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-2">
             <FaChartBar />
             <span className="text-xs font-semibold text-slate-400 uppercase">Postęp ogólny</span>
@@ -440,7 +440,7 @@ function DetailsContent({ project }: { project: Project }) {
         </div>
 
         {/* Last Update */}
-        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-2">
             <FaClock />
             <span className="text-xs font-semibold text-slate-400 uppercase">Ostatnia aktualizacja</span>
@@ -453,7 +453,7 @@ function DetailsContent({ project }: { project: Project }) {
       {/* Team & Technologies Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* Team */}
-        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-4">
             <FaUsers />
             <span className="text-xs font-semibold text-slate-400 uppercase">Zespół</span>
@@ -463,7 +463,7 @@ function DetailsContent({ project }: { project: Project }) {
         </div>
 
         {/* Priority */}
-        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
+        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-4">
             <FaBolt />
             <span className="text-xs font-semibold text-slate-400 uppercase">Priorytet</span>
@@ -476,7 +476,7 @@ function DetailsContent({ project }: { project: Project }) {
 
       {/* Technologies */}
       {project.technologies && project.technologies.length > 0 && (
-        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-6">
+        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-6">
           <div className="flex items-center gap-3 mb-4">
             <FaCode />
             <h3 className="text-lg font-semibold">Technologie</h3>
@@ -485,7 +485,7 @@ function DetailsContent({ project }: { project: Project }) {
             {project.technologies.map((tech) => (
               <span 
                 key={tech}
-                className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-300 border border-white/20"
+                className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-300 border border-white/6"
               >
                 {tech}
               </span>
@@ -496,26 +496,26 @@ function DetailsContent({ project }: { project: Project }) {
 
       {/* Project Goals */}
       {project.goals && project.goals.length > 0 && (
-        <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-6">
+        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-6">
             <div className="flex items-center gap-3 mb-4">
             <FaBullseye />
             <h3 className="text-lg font-semibold">Cele projektu</h3>
           </div>
           <ul className="space-y-2">
             {project.goals.map((goal, index) => (
-              <li key={index} className="flex items-start gap-3 text-slate-300">
-                <span className="flex-shrink-0 w-5 h-5 rounded-full border border-white/30 flex items-center justify-center mt-0.5">
-                  <span className="w-2 h-2 rounded-full bg-white/60"></span>
-                </span>
-                <span>{goal}</span>
-              </li>
-            ))}
+                  <li key={index} className="flex items-start gap-3 text-slate-300">
+                    <span className="flex-shrink-0 w-5 h-5 rounded-full border border-white/20 flex items-center justify-center mt-0.5">
+                      <span className="w-2 h-2 rounded-full bg-white/60"></span>
+                    </span>
+                    <span>{goal}</span>
+                  </li>
+                ))}
           </ul>
         </div>
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-8 pt-6 border-t border-white/8">
+      <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-8 pt-6 border-t border-white/6">
         <FaGlobe />
         <span>Każdy może przeglądać postępy</span>
       </div>

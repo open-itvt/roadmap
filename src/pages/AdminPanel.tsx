@@ -162,7 +162,7 @@ export function AdminPanel() {
   return (
     <div className="min-h-screen bg-[#0a0d12] text-slate-100">
       <div className="mx-auto flex min-h-screen max-w-[1440px] border border-white/10 bg-[#0b0f14] shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_30px_90px_rgba(0,0,0,0.55)] lg:rounded-2xl lg:m-4 overflow-hidden">
-        <aside className="hidden lg:flex w-[288px] flex-col border-r border-white/8 bg-[#0b1118]">
+          <aside className="hidden lg:flex w-[288px] flex-col border-r border-white/6 bg-[#0b1118]">
           <div className="px-6 py-5 border-b border-white/6">
             <div className="flex items-center gap-3">
               <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25">
@@ -183,7 +183,7 @@ export function AdminPanel() {
                 className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
                   selectedProject?.id === project.id
                     ? 'border-violet-400/45 bg-violet-500/15 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.18)]'
-                    : 'border-transparent text-slate-300 hover:border-white/8 hover:bg-white/5'
+                    : 'border-transparent text-slate-300 hover:border-white/6 hover:bg-white/5'
                 }`}
                 onClick={() => setSelectedProject(project)}
               >
@@ -194,8 +194,8 @@ export function AdminPanel() {
             ))}
           </div>
 
-          <div className="mt-auto border-t border-white/8 p-4">
-            <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
+          <div className="mt-auto border-t border-white/6 p-4">
+            <div className="rounded-2xl border border-white/6 bg-white/[0.03] p-4">
               <div className="text-sm font-medium text-white">Potrzebujesz pomocy?</div>
               <div className="mt-1 text-xs leading-5 text-slate-400">Zobacz dokumentację lub wróć do widoku publicznego.</div>
             </div>
@@ -228,10 +228,11 @@ export function AdminPanel() {
             </div>
 
             <div className="rounded-3xl border border-white/8 bg-white/[0.03] p-4 sm:p-6 lg:p-7">
+              <div className="rounded-3xl border border-white/6 bg-white/[0.03] p-4 sm:p-6 lg:p-7">
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[720px] border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-white/8 text-left text-xs uppercase tracking-[0.2em] text-slate-500">
+                    <tr className="border-b border-white/6 text-left text-xs uppercase tracking-[0.2em] text-slate-500">
                       <th className="pb-4 font-medium">Nazwa projektu</th>
                       <th className="pb-4 font-medium">Opis (skrót)</th>
                       <th className="pb-4 font-medium">Liczba etapów</th>
@@ -262,8 +263,8 @@ export function AdminPanel() {
                           <td className="py-4 pr-4 text-slate-300">{new Date(project.createdAt).toLocaleDateString('pl-PL')}</td>
                           <td className="py-4 text-right">
                             <div className="inline-flex items-center gap-2">
-                              <button className="rounded-lg border border-white/8 p-2 text-slate-300 hover:bg-white/5"><FaEdit /></button>
-                              <button className="rounded-lg border border-white/8 p-2 text-slate-300 hover:bg-white/5"><FaClone /></button>
+                              <button className="rounded-lg border border-white/6 p-2 text-slate-300 hover:bg-white/5"><FaEdit /></button>
+                              <button className="rounded-lg border border-white/6 p-2 text-slate-300 hover:bg-white/5"><FaClone /></button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -285,14 +286,16 @@ export function AdminPanel() {
                 <span>1–{projects.length} z {projects.length} projektów</span>
                 <div className="flex items-center gap-2">
                   <button className="rounded-lg border border-white/8 px-2.5 py-1.5"><FaChevronLeft /></button>
+                    <button className="rounded-lg border border-white/6 px-2.5 py-1.5"><FaChevronLeft /></button>
                   <button className="rounded-lg border border-violet-400/45 bg-violet-500/15 px-3 py-1.5 text-violet-200">1</button>
-                  <button className="rounded-lg border border-white/8 px-2.5 py-1.5"><FaChevronRight /></button>
+                    <button className="rounded-lg border border-white/6 px-2.5 py-1.5"><FaChevronRight /></button>
                 </div>
               </div>
             </div>
+          </div>
 
             {selectedProject ? (
-              <div className="mt-6 rounded-3xl border border-white/8 bg-white/[0.03] p-4 sm:p-6 lg:p-7">
+                <div className="mt-6 rounded-3xl border border-white/6 bg-white/[0.03] p-4 sm:p-6 lg:p-7">
                 <div className="mb-6 flex items-center justify-between gap-4">
                   <div>
                     <h2 className="text-xl font-semibold tracking-tight">Etapy – {selectedProject.name}</h2>
@@ -308,14 +311,14 @@ export function AdminPanel() {
                 </div>
 
                 {showNewStageForm && (
-                  <form onSubmit={handleAddStage} className="mb-6 rounded-2xl border border-white/8 bg-black/20 p-4">
+                  <form onSubmit={handleAddStage} className="mb-6 rounded-2xl border border-white/6 bg-black/20 p-4">
                     <div className="grid grid-cols-2 gap-4 mb-4">
                       <input
                         type="text"
                         value={newStageData.name}
                         onChange={(e) => setNewStageData({ ...newStageData, name: e.target.value })}
                         placeholder="Stage name"
-                        className="col-span-2 rounded-xl border border-white/10 bg-[#0f141b] px-3 py-2 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
+                        className="col-span-2 rounded-xl border border-white/6 bg-[#0f141b] px-3 py-2 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
                         required
                       />
                       <input
@@ -323,12 +326,12 @@ export function AdminPanel() {
                         value={newStageData.description}
                         onChange={(e) => setNewStageData({ ...newStageData, description: e.target.value })}
                         placeholder="Description"
-                        className="col-span-2 rounded-xl border border-white/10 bg-[#0f141b] px-3 py-2 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
+                        className="col-span-2 rounded-xl border border-white/6 bg-[#0f141b] px-3 py-2 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
                       />
                       <select
                         value={newStageData.status}
                         onChange={(e) => setNewStageData({ ...newStageData, status: e.target.value as any })}
-                        className="rounded-xl border border-white/10 bg-[#0f141b] px-3 py-2 text-white outline-none focus:border-violet-400"
+                        className="rounded-xl border border-white/6 bg-[#0f141b] px-3 py-2 text-white outline-none focus:border-violet-400"
                       >
                         <option value="pending">Pending</option>
                         <option value="in-progress">In Progress</option>
@@ -340,7 +343,7 @@ export function AdminPanel() {
                         value={newStageData.icon}
                         onChange={(e) => setNewStageData({ ...newStageData, icon: e.target.value })}
                         placeholder="Icon"
-                        className="rounded-xl border border-white/10 bg-[#0f141b] px-3 py-2 text-white outline-none focus:border-violet-400"
+                        className="rounded-xl border border-white/6 bg-[#0f141b] px-3 py-2 text-white outline-none focus:border-violet-400"
                         maxLength={2}
                       />
                     </div>
@@ -351,7 +354,7 @@ export function AdminPanel() {
                       <button
                         type="button"
                         onClick={() => setShowNewStageForm(false)}
-                        className="rounded-xl border border-white/10 px-4 py-2 text-sm text-slate-200 hover:bg-white/5"
+                          className="rounded-xl border border-white/6 px-4 py-2 text-sm text-slate-200 hover:bg-white/5"
                       >
                         Cancel
                       </button>
@@ -361,13 +364,13 @@ export function AdminPanel() {
 
                 <div className="space-y-3">
                   {stages.map((stage) => (
-                    <div key={stage.id} className="rounded-2xl border border-white/8 bg-[#0f141b] p-4 transition hover:border-white/12">
+                      <div key={stage.id} className="rounded-2xl border border-white/6 bg-[#0f141b] p-4 transition hover:border-white/8">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="mb-1 flex items-center gap-3">
-                            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-sm">{(stage.icon && stage.icon.length <= 2) ? stage.icon : <FaCode />}</span>
+                              <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-sm">{(stage.icon && stage.icon.length <= 2) ? stage.icon : <FaCode />}</span>
                             <h3 className="font-semibold">{stage.name}</h3>
-                            <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-400">{stage.order + 1}</span>
+                              <span className="rounded-full border border-white/6 px-2 py-0.5 text-[11px] text-slate-400">{stage.order + 1}</span>
                           </div>
                           <p className="ml-11 text-sm text-slate-400">{stage.description}</p>
                           <div className="mt-2 flex items-center gap-2">
@@ -382,8 +385,8 @@ export function AdminPanel() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-slate-400">
-                          <button className="rounded-lg border border-white/8 p-2 hover:bg-white/5"><FaEdit /></button>
-                          <button className="rounded-lg border border-white/8 p-2 hover:bg-white/5"><FaClone /></button>
+                            <button className="rounded-lg border border-white/6 p-2 hover:bg-white/5"><FaEdit /></button>
+                            <button className="rounded-lg border border-white/6 p-2 hover:bg-white/5"><FaClone /></button>
                           <button onClick={() => handleDeleteStage(stage.id)} className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10"><FaTrashAlt /></button>
                         </div>
                       </div>

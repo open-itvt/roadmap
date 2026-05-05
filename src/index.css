@@ -15,3 +15,9 @@ body {
 html {
   @apply scroll-smooth;
 }
+
+@layer utilities {
+  .border-1 {
+    border-width: 0.5px;
+  }
+}
