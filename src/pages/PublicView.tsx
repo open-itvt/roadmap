@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { projectsApi } from '@/api/endpoints'
 import type { Project, Stage } from '@/types'
 
 // Sample data for development/demo
