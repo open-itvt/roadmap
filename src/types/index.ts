@@ -6,6 +6,13 @@ export interface Project {
   description: string
   icon: string
   status: 'active' | 'completed' | 'archived'
+  priority: 'high' | 'medium' | 'low'
+  progress: number
+  startDate: string
+  lastUpdate: string
+  teamSize: number
+  technologies: string[]
+  goals: string[]
   createdAt: string
   updatedAt: string
 }
@@ -18,9 +25,14 @@ export interface Stage {
   status: 'pending' | 'in-progress' | 'completed' | 'blocked'
   icon: string
   order: number
+  progress?: number
   createdAt: string
   updatedAt: string
 }
+
+// Type aliases for creation payloads (excluding auto-generated fields)
+export type ProjectCreatePayload = Omit<Project, 'id' | 'createdAt' | 'updatedAt'>
+export type StageCreatePayload = Omit<Stage, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>
 
 export interface AdminUser {
   id: string
