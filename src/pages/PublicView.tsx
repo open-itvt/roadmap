@@ -227,19 +227,18 @@ export function PublicView() {
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-4xl px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
-          <div className="mb-4 flex items-center justify-between gap-3 lg:hidden">
+          <div className="mb-4 flex items-start justify-between gap-3 lg:hidden">
             <button
               type="button"
               onClick={() => setMobileMenuOpen(true)}
-              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100"
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100 flex-shrink-0"
               aria-label="Open navigation"
             >
               <FaBars />
             </button>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-col items-end gap-2">
               <div className="min-w-0 text-right">
-                <div className="truncate text-sm font-semibold text-white">Roadmapa</div>
-                <div className="text-xs text-slate-400">Public view</div>
+                <div className="truncate text-sm font-semibold text-white">{selectedProject?.name}</div>
               </div>
               <a href="/auth/login" className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100 flex-shrink-0" aria-label="GitHub login">
                 <FaExternalLinkAlt className="text-sm" />
