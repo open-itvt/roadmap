@@ -140,7 +140,7 @@ export function PublicView() {
   return (
     <div className="min-h-screen bg-[#0a0d12] text-slate-100 flex flex-col lg:flex-row">
       {/* Sidebar */}
-      <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-[#0b1118]">
+      <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-[#0b1118] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
         <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-slate-800/80">
           <div className="flex items-center gap-3">
             <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25">
@@ -154,7 +154,7 @@ export function PublicView() {
         </div>
 
         <div className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Projekty</div>
-        <div className="px-3 pb-4 space-y-2 overflow-y-auto flex-1">
+        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 space-y-2">
           {projects.map((project) => (
             <button
               key={project.id}
