@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
-import QRCode from 'qrcode.react'
 import { generateRandomPassword, validatePasswordStrength } from '@/utils/crypto'
 
 export function SetupPage() {
@@ -125,11 +124,10 @@ export function SetupPage() {
           <form onSubmit={handleVerifyTotp} className="space-y-6">
             <div className="bg-slate-900 p-6 rounded border border-slate-800 flex justify-center">
               <div className="bg-white p-4 rounded">
-                <QRCode
-                  value={qrCode}
-                  size={200}
-                  level="H"
-                  includeMargin={true}
+                <img
+                  src={qrCode}
+                  alt="TOTP QR code"
+                  className="h-[200px] w-[200px]"
                 />
               </div>
             </div>

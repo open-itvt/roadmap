@@ -14,6 +14,26 @@ export function LoginPage() {
   const [error, setError] = useState('')
   const [useWebAuthn, setUseWebAuthn] = useState(false)
 
+  const base64UrlToBuffer = (value: string): ArrayBuffer => {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    const binary = atob(padded)
+    const buffer = new Uint8Array(binary.length)
+    for (let index = 0; index < binary.length; index += 1) {
+      buffer[index] = binary.charCodeAt(index)
+    }
+    return buffer.buffer
+  }
+
+  const bufferToBase64Url = (value: ArrayBuffer): string => {
+    const bytes = new Uint8Array(value)
+    let binary = ''
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte)
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+  }
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -35,9 +55,8 @@ export function LoginPage() {
 
     try {
       const startResponse = await authApi.webAuthnStartAuth()
-      
-      // Convert server challenge to ArrayBuffer
-      const challenge = Uint8Array.from(atob(startResponse.challenge), c => c.charCodeAt(0))
+
+      const challenge = base64UrlToBuffer(startResponse.challenge)
       
       const credential = await navigator.credentials.get({
         publicKey: {
@@ -51,15 +70,19 @@ export function LoginPage() {
         throw new Error('WebAuthn authentication cancelled')
       }
 
+      const publicKeyCredential = credential as PublicKeyCredential
+      const assertion = publicKeyCredential.response as AuthenticatorAssertionResponse
+
       const response = await authApi.webAuthnCompleteAuth(startResponse.sessionId, {
-        id: credential.id,
-        rawId: credential.id,
+        id: publicKeyCredential.id,
+        rawId: bufferToBase64Url(publicKeyCredential.rawId),
         response: {
-          clientDataJSON: credential.response.clientDataJSON,
-          authenticatorData: credential.response.authenticatorData,
-          signature: credential.response.signature,
+          clientDataJSON: bufferToBase64Url(assertion.clientDataJSON),
+          authenticatorData: bufferToBase64Url(assertion.authenticatorData),
+          signature: bufferToBase64Url(assertion.signature),
+          userHandle: assertion.userHandle ? bufferToBase64Url(assertion.userHandle) : undefined,
         },
-        type: credential.type,
+        type: publicKeyCredential.type,
       })
 
       localStorage.setItem('sessionToken', response.sessionToken)
