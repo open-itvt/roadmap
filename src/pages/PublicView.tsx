@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import {
+  FaBars,
   FaGlobe,
   FaFileAlt,
   FaChartBar,
@@ -106,6 +107,7 @@ export function PublicView() {
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [activeTab, setActiveTab] = useState<'roadmap' | 'details'>('roadmap')
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -137,11 +139,10 @@ export function PublicView() {
     )
   }
 
-  return (
-    <div className="min-h-screen bg-[#0a0d12] text-slate-100 flex flex-col lg:flex-row">
-      {/* Sidebar */}
-      <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-[#0b1118] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
-        <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-slate-800/80">
+  const sidebarContent = (
+    <>
+      <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-slate-800/80">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25">
               <span className="text-sm font-semibold">R</span>
@@ -151,42 +152,91 @@ export function PublicView() {
               <div className="text-xs text-slate-400">Public view</div>
             </div>
           </div>
+          <button
+            type="button"
+            onClick={() => setMobileMenuOpen(false)}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-200 lg:hidden"
+            aria-label="Close navigation"
+          >
+            ×
+          </button>
         </div>
+      </div>
 
-        <div className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Projekty</div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 space-y-2">
-          {projects.map((project) => (
-            <button
-              key={project.id}
-              onClick={() => setSelectedProject(project)}
-              className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
-                selectedProject?.id === project.id
-                  ? 'border-violet-400/45 bg-violet-500/15 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.18)]'
-                  : 'border-transparent text-slate-300 hover:border-slate-700/80 hover:bg-white/5'
-              }`}
-            >
-              <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg flex-shrink-0">
-                <FaCode className="text-lg" />
-              </span>
-              <span className="truncate text-sm font-medium">{project.name}</span>
-            </button>
-          ))}
-        </div>
+      <div className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Projekty</div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-4 space-y-2">
+        {projects.map((project) => (
+          <button
+            key={project.id}
+            onClick={() => {
+              setSelectedProject(project)
+              setMobileMenuOpen(false)
+            }}
+            className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+              selectedProject?.id === project.id
+                ? 'border-violet-400/45 bg-violet-500/15 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.18)]'
+                : 'border-transparent text-slate-300 hover:border-slate-700/80 hover:bg-white/5'
+            }`}
+          >
+            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg flex-shrink-0">
+              <FaCode className="text-lg" />
+            </span>
+            <span className="truncate text-sm font-medium">{project.name}</span>
+          </button>
+        ))}
+      </div>
 
-        <div className="mt-auto p-3 lg:p-4">
-          <div className="rounded-2xl border border-slate-800/80 bg-[#0f141b] p-3 lg:p-4 shadow-[0_0_0_1px_rgba(15,23,42,0.7)]">
-            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Nightly Release</div>
-            <div className="mt-1 text-sm font-medium text-white">2026-05-05</div>
-            <div className="mt-1 text-xs leading-5 text-slate-400">Latest build deployed to the public view.</div>
-          </div>
+      <div className="mt-auto p-3 lg:p-4">
+        <div className="rounded-2xl border border-slate-800/80 bg-[#0f141b] p-3 lg:p-4 shadow-[0_0_0_1px_rgba(15,23,42,0.7)]">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Nightly Release</div>
+          <div className="mt-1 text-sm font-medium text-white">2026-05-05</div>
+          <div className="mt-1 text-xs leading-5 text-slate-400">Latest build deployed to the public view.</div>
         </div>
+      </div>
+    </>
+  )
+
+  return (
+    <div className="min-h-screen bg-[#0a0d12] text-slate-100 flex flex-col lg:flex-row">
+      {/* Sidebar */}
+      <aside className="hidden lg:flex w-72 flex-shrink-0 flex-col border-r border-slate-800/80 bg-[#0b1118] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
+        {sidebarContent}
       </aside>
+
+      {mobileMenuOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden">
+          <button
+            type="button"
+            className="absolute inset-0 bg-black/65"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-label="Close navigation backdrop"
+          />
+          <aside className="absolute inset-y-0 left-0 flex h-full w-[86vw] max-w-sm flex-col border-r border-slate-800/80 bg-[#0b1118] shadow-2xl shadow-black/60">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         <div className="mx-auto w-full max-w-4xl px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
+          <div className="mb-4 flex items-center justify-between gap-3 lg:hidden">
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
+              className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100"
+              aria-label="Open navigation"
+            >
+              <FaBars />
+            </button>
+            <div className="min-w-0 text-right">
+              <div className="truncate text-sm font-semibold text-white">Roadmapa</div>
+              <div className="text-xs text-slate-400">Public view</div>
+            </div>
+          </div>
+
           {/* Header */}
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="mb-6 hidden flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:flex">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Roadmapa</h1>
               <p className="mt-1 text-sm text-slate-400">Śledź postęp prac dla wybranego projektu</p>
@@ -326,7 +376,7 @@ function RoadmapContent({ project }: { project: Project }) {
 
               {/* Stage card */}
               <div className="flex-1 pb-4">
-                <div className="rounded-2xl border-1 border-slate-800/80 bg-[#0f141b] p-4 shadow-[0_0_0_1px_rgba(15,23,42,0.85)] transition hover:border-slate-700/80">
+                <div className="rounded-2xl border-1 border-slate-800/80 bg-[#0f141b] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)] transition hover:border-slate-700/80">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold mb-1">{stage.name}</h3>
