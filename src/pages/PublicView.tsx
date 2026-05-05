@@ -397,125 +397,161 @@ function DetailsContent({ project }: { project: Project }) {
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Description Section */}
-      <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10">
+      <section className="rounded-3xl bg-[#0f141b] p-6 shadow-[0_0_0_1px_rgba(15,23,42,0.75)] lg:p-8">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="max-w-2xl">
+            <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
               <FaFileAlt />
-            </span>
-            <h3 className="text-lg font-semibold">Opis</h3>
+              <span>Opis projektu</span>
+            </div>
+            <h3 className="text-2xl font-semibold tracking-tight text-white">{project.name}</h3>
+            <p className="mt-3 text-sm leading-6 text-slate-300 lg:text-base">{project.description}</p>
           </div>
-        <p className="text-slate-300 leading-relaxed">{project.description}</p>
-      </div>
 
-      {/* Status & Priority Row */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        {/* Status */}
-        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
-          <div className="flex items-center gap-2 mb-2">
+          <div className={`inline-flex w-fit items-center gap-2 rounded-full px-3 py-1.5 text-sm font-medium ${statusStyle.color}`}>
             <FaCheckCircle />
-            <span className="text-xs font-semibold text-slate-400 uppercase">Status</span>
-          </div>
-          <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusStyle.color}`}>
-            {statusStyle.label}
-          </div>
-          <p className="text-xs text-slate-500 mt-2">{new Date(project.startDate).toLocaleDateString('pl-PL')}</p>
-        </div>
-
-        {/* Progress */}
-        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <FaChartBar />
-            <span className="text-xs font-semibold text-slate-400 uppercase">Postęp ogólny</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className="text-2xl font-bold text-white">{project.progress}%</span>
-          </div>
-          <div className="w-full bg-slate-800 rounded-full h-2 mt-3 overflow-hidden">
-            <div 
-              className="bg-gradient-to-r from-violet-500 to-indigo-500 h-full rounded-full transition-all"
-              style={{ width: `${project.progress}%` }}
-            ></div>
+            <span>{statusStyle.label}</span>
           </div>
         </div>
+      </section>
 
-        {/* Last Update */}
-        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <FaClock />
-            <span className="text-xs font-semibold text-slate-400 uppercase">Ostatnia aktualizacja</span>
-          </div>
-          <p className="text-sm text-slate-300">{new Date(project.lastUpdate).toLocaleDateString('pl-PL')}</p>
-          <p className="text-xs text-slate-500 mt-1">{new Date(project.lastUpdate).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}</p>
-        </div>
-      </div>
-
-      {/* Team & Technologies Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* Team */}
-        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <FaUsers />
-            <span className="text-xs font-semibold text-slate-400 uppercase">Zespół</span>
-          </div>
-          <p className="text-2xl font-bold text-white">{project.teamSize}</p>
-          <p className="text-xs text-slate-500 mt-1">członków zespołu</p>
-        </div>
-
-        {/* Priority */}
-        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-4">
-          <div className="flex items-center gap-2 mb-4">
-            <FaBolt />
-            <span className="text-xs font-semibold text-slate-400 uppercase">Priorytet</span>
-          </div>
-          <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${priorityStyle.color}`}>
-            {priorityStyle.label}
-          </div>
-        </div>
-      </div>
-
-      {/* Technologies */}
-      {project.technologies && project.technologies.length > 0 && (
-        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <FaCode />
-            <h3 className="text-lg font-semibold">Technologie</h3>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {project.technologies.map((tech) => (
-              <span 
-                key={tech}
-                className="px-3 py-1 rounded-full text-xs font-medium bg-white/10 text-slate-300 border border-white/6"
-              >
-                {tech}
+      <div className="grid gap-4 xl:grid-cols-5">
+        <div className="space-y-4 xl:col-span-3">
+          <section className="rounded-3xl bg-[#0f141b] p-5 shadow-[0_0_0_1px_rgba(15,23,42,0.75)] lg:p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                <FaChartBar />
               </span>
-            ))}
-          </div>
-        </div>
-      )}
+              <div>
+                <div className="text-sm font-medium text-white">Postęp ogólny</div>
+                <div className="text-xs text-slate-500">Aktualny stan projektu</div>
+              </div>
+            </div>
 
-      {/* Project Goals */}
-      {project.goals && project.goals.length > 0 && (
-        <div className="rounded-2xl border border-white/6 bg-[#0f141b] p-6">
-            <div className="flex items-center gap-3 mb-4">
-            <FaBullseye />
-            <h3 className="text-lg font-semibold">Cele projektu</h3>
-          </div>
-          <ul className="space-y-2">
-            {project.goals.map((goal, index) => (
-                  <li key={index} className="flex items-start gap-3 text-slate-300">
-                    <span className="flex-shrink-0 w-5 h-5 rounded-full border border-white/20 flex items-center justify-center mt-0.5">
-                      <span className="w-2 h-2 rounded-full bg-white/60"></span>
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <div className="text-4xl font-semibold tracking-tight text-white">{project.progress}%</div>
+                <p className="mt-1 text-sm text-slate-400">Wykonane względem planu</p>
+              </div>
+              <div className="rounded-2xl bg-white/5 px-3 py-2 text-xs text-slate-400">
+                Start: {new Date(project.startDate).toLocaleDateString('pl-PL')}
+              </div>
+            </div>
+
+            <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all"
+                style={{ width: `${project.progress}%` }}
+              />
+            </div>
+          </section>
+
+          <section className="rounded-3xl bg-[#0f141b] p-5 shadow-[0_0_0_1px_rgba(15,23,42,0.75)] lg:p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                <FaCode />
+              </span>
+              <div>
+                <div className="text-sm font-medium text-white">Technologie</div>
+                <div className="text-xs text-slate-500">Stos używany w projekcie</div>
+              </div>
+            </div>
+
+            {project.technologies && project.technologies.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {project.technologies.map((tech) => (
+                  <span
+                    key={tech}
+                    className="rounded-full border border-slate-800/80 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300"
+                  >
+                    {tech}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-slate-400">Brak przypisanych technologii.</p>
+            )}
+          </section>
+
+          {project.goals && project.goals.length > 0 && (
+            <section className="rounded-3xl bg-[#0f141b] p-5 shadow-[0_0_0_1px_rgba(15,23,42,0.75)] lg:p-6">
+              <div className="mb-4 flex items-center gap-3">
+                <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                  <FaBullseye />
+                </span>
+                <div>
+                  <div className="text-sm font-medium text-white">Cele projektu</div>
+                  <div className="text-xs text-slate-500">Najważniejsze założenia</div>
+                </div>
+              </div>
+
+              <ul className="grid gap-3">
+                {project.goals.map((goal, index) => (
+                  <li key={index} className="flex items-start gap-3 rounded-2xl bg-white/[0.02] p-3 text-slate-300">
+                    <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-800 text-[11px] font-semibold text-slate-300">
+                      {index + 1}
                     </span>
-                    <span>{goal}</span>
+                    <span className="leading-6">{goal}</span>
                   </li>
                 ))}
-          </ul>
+              </ul>
+            </section>
+          )}
         </div>
-      )}
 
-      {/* Footer */}
-      <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-8 pt-6 border-t border-white/6">
+        <aside className="grid gap-4 xl:col-span-2">
+          <section className="rounded-3xl bg-[#0f141b] p-5 shadow-[0_0_0_1px_rgba(15,23,42,0.75)] lg:p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                <FaClock />
+              </span>
+              <div>
+                <div className="text-sm font-medium text-white">Ostatnia aktualizacja</div>
+                <div className="text-xs text-slate-500">Kiedy projekt był ostatnio zmieniany</div>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-white/[0.03] p-4">
+              <div className="text-xl font-semibold text-white">{new Date(project.lastUpdate).toLocaleDateString('pl-PL')}</div>
+              <p className="mt-1 text-sm text-slate-400">
+                {new Date(project.lastUpdate).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+              </p>
+            </div>
+          </section>
+
+          <section className="rounded-3xl bg-[#0f141b] p-5 shadow-[0_0_0_1px_rgba(15,23,42,0.75)] lg:p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                <FaUsers />
+              </span>
+              <div>
+                <div className="text-sm font-medium text-white">Zespół</div>
+                <div className="text-xs text-slate-500">Liczba osób w projekcie</div>
+              </div>
+            </div>
+            <div className="rounded-2xl bg-white/[0.03] p-4">
+              <div className="text-3xl font-semibold tracking-tight text-white">{project.teamSize}</div>
+              <p className="mt-1 text-sm text-slate-400">członków zespołu</p>
+            </div>
+          </section>
+
+          <section className="rounded-3xl bg-[#0f141b] p-5 shadow-[0_0_0_1px_rgba(15,23,42,0.75)] lg:p-6">
+            <div className="mb-4 flex items-center gap-3">
+              <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                <FaBolt />
+              </span>
+              <div>
+                <div className="text-sm font-medium text-white">Priorytet</div>
+                <div className="text-xs text-slate-500">Jak pilny jest ten projekt</div>
+              </div>
+            </div>
+            <div className={`inline-flex rounded-full px-3 py-1.5 text-sm font-medium ${priorityStyle.color}`}>
+              {priorityStyle.label}
+            </div>
+          </section>
+        </aside>
+      </div>
+
+      <div className="flex items-center justify-center gap-2 pt-6 text-sm text-slate-500">
         <FaGlobe />
         <span>Każdy może przeglądać postępy</span>
       </div>
