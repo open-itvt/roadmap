@@ -236,8 +236,8 @@ export function PublicView() {
             >
               <FaBars />
             </button>
-            <div className="flex flex-col items-end gap-2">
-              <div className="min-w-0 text-right">
+            <div className="flex flex-row items-center gap-2">
+              <div className="min-w-0 text-right flex-1">
                 <div className="truncate text-sm font-semibold text-white">{selectedProject?.name}</div>
               </div>
               <a href="/auth/login" className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100 flex-shrink-0" aria-label="GitHub login">
