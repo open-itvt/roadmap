@@ -1,4 +1,5 @@
-import { getSessionFromToken, getAdminByUsername } from './_shared'
+import { getSessionFromToken, getAdminByUsername, getAllAdmins } from './_shared'
+import { handleCors } from '../_cors'
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') {
@@ -7,18 +8,23 @@ export default async function handler(req, res) {
   }
 
   try {
+    if (handleCors(req, res)) return
     const authHeader = req.headers.authorization || ''
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : undefined
     const session = await getSessionFromToken(token)
 
+    // Determine if any admin account exists in the system
+    const admins = await getAllAdmins()
+    const adminExists = admins.length > 0
+
     if (!session) {
-      res.status(200).json({ success: true, data: { isAuthenticated: false, isSetupComplete: false } })
+      res.status(200).json({ success: true, data: { isAuthenticated: false, isSetupComplete: false, adminExists } })
       return
     }
 
     const admin = await getAdminByUsername(session.username)
     if (!admin) {
-      res.status(200).json({ success: true, data: { isAuthenticated: false, isSetupComplete: false } })
+      res.status(200).json({ success: true, data: { isAuthenticated: false, isSetupComplete: false, adminExists } })
       return
     }
 
@@ -28,6 +34,7 @@ export default async function handler(req, res) {
         isAuthenticated: true,
         adminId: admin.username,
         isSetupComplete: Boolean(admin.isSetupComplete ?? true),
+        adminExists,
       },
     })
   } catch (error) {

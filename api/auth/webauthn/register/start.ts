@@ -2,8 +2,11 @@ import { generateRegistrationOptions } from '@simplewebauthn/server'
 import { getAdminByUsername, getWebAuthnOrigin, getWebAuthnRpID } from '../../_shared'
 import redis from '../../../upstashClient'
 import { v4 as uuidv4 } from 'uuid'
+import { handleCors } from '../../../_cors'
 
 export default async function handler(req, res) {
+  if (handleCors(req, res)) return
+
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' })
     return
