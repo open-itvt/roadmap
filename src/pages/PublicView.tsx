@@ -326,7 +326,7 @@ function RoadmapContent({ project }: { project: Project }) {
 
               {/* Stage card */}
               <div className="flex-1 pb-4">
-                <div className="rounded-2xl border-1 border-white/6 bg-[#0f141b] p-4 shadow-[0_0_0_1px_rgba(255,255,255,0.02)] transition hover:border-white/8">
+                <div className="rounded-2xl border-1 border-slate-800/80 bg-[#0f141b] p-4 shadow-[0_0_0_1px_rgba(15,23,42,0.85)] transition hover:border-slate-700/80">
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold mb-1">{stage.name}</h3>
