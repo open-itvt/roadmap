@@ -250,7 +250,7 @@ export function PublicView() {
           <div className="mb-6 hidden flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:flex">
             <div>
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Roadmapa</h1>
-              <p className="mt-1 text-sm text-slate-400">Śledź postęp prac dla wybranego projektu</p>
+              <p className="mt-1 text-sm text-slate-400">Śledź postęp dla tego projektu</p>
             </div>
             <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/6 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
               <span>GitHub</span>
