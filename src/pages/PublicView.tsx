@@ -140,8 +140,8 @@ export function PublicView() {
   return (
     <div className="min-h-screen bg-[#0a0d12] text-slate-100 flex flex-col lg:flex-row">
       {/* Sidebar */}
-      <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-white/6 bg-[#0b1118]">
-        <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-white/6">
+      <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-slate-800/80 bg-[#0b1118]">
+        <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-slate-800/80">
           <div className="flex items-center gap-3">
             <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25">
               <span className="text-sm font-semibold">R</span>
@@ -162,7 +162,7 @@ export function PublicView() {
               className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
                 selectedProject?.id === project.id
                   ? 'border-violet-400/45 bg-violet-500/15 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.18)]'
-                  : 'border-transparent text-slate-300 hover:border-white/8 hover:bg-white/5'
+                  : 'border-transparent text-slate-300 hover:border-slate-700/80 hover:bg-white/5'
               }`}
             >
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg flex-shrink-0">
@@ -173,8 +173,8 @@ export function PublicView() {
           ))}
         </div>
 
-        <div className="border-t border-white/6 p-3 lg:p-4 mt-auto">
-          <div className="rounded-2xl border border-white/6 bg-white/[0.03] p-3 lg:p-4">
+        <div className="border-t border-slate-800/80 p-3 lg:p-4 mt-auto">
+          <div className="rounded-2xl border border-slate-800/80 bg-white/[0.03] p-3 lg:p-4">
             <div className="text-sm font-medium text-white">Projekt publiczny</div>
             <div className="mt-1 text-xs leading-5 text-slate-400">Każdy może przeglądać postępy</div>
           </div>
