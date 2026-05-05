@@ -8,7 +8,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requireSetup = false }: ProtectedRouteProps) {
-  const { isAuthenticated, isSetupComplete, loading } = useAuth()
+  const { isAuthenticated, isSetupComplete, loading, adminExists } = useAuth()
 
   if (loading) {
     return (
@@ -22,7 +22,11 @@ export function ProtectedRoute({ children, requireSetup = false }: ProtectedRout
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/auth/login" replace />
+    if (adminExists) {
+      return <Navigate to="/auth/login" replace />
+    }
+
+    return <Navigate to="/auth/setup" replace />
   }
 
   if (requireSetup && !isSetupComplete) {

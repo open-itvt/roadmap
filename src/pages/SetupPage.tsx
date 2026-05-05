@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useEffect } from 'react'
 import { FaEye, FaEyeSlash, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
@@ -6,6 +7,22 @@ import { generateRandomPassword, validatePasswordStrength } from '@/utils/crypto
 
 export function SetupPage() {
   const navigate = useNavigate()
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const auth = await authApi.checkAuth()
+        if (mounted && auth.adminExists) {
+          navigate('/auth/login', { replace: true })
+        }
+      } catch (err) {
+        // ignore
+      }
+    })()
+    return () => {
+      mounted = false
+    }
+  }, [navigate])
   const [step, setStep] = useState<'init' | 'totp' | 'password'>('init')
   const [username, setUsername] = useState('')
   const [sessionId, setSessionId] = useState('')

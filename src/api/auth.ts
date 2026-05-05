@@ -86,9 +86,9 @@ export const authApi = {
   },
 
   // Check if authenticated
-  checkAuth: async (): Promise<{ isAuthenticated: boolean; adminId?: string; isSetupComplete?: boolean }> => {
+  checkAuth: async (): Promise<{ isAuthenticated: boolean; adminId?: string; isSetupComplete?: boolean; adminExists?: boolean }> => {
     try {
-      const { data } = await apiClient.get<ApiResponse<{ isAuthenticated: boolean; adminId?: string; isSetupComplete?: boolean }>>('/api/auth/me')
+      const { data } = await apiClient.get<ApiResponse<{ isAuthenticated: boolean; adminId?: string; isSetupComplete?: boolean; adminExists?: boolean }>>('/api/auth/me')
       return data.data!
     } catch {
       return { isAuthenticated: false }
@@ -122,6 +122,13 @@ export const authApi = {
       sessionId,
       response,
     })
+    return data.data!
+  },
+
+  // Reset all admin data (for development/testing)
+  resetAllAdminData: async (): Promise<{ success: boolean }> => {
+    const { data } = await apiClient.post<ApiResponse<{ success: boolean }>>('/api/admin/reset')
+    localStorage.removeItem('sessionToken')
     return data.data!
   },
 }

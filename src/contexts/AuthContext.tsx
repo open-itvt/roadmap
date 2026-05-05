@@ -14,6 +14,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<AuthState>({
     isAuthenticated: false,
     loading: true,
+    adminExists: false,
   })
 
   // Check authentication on mount
@@ -25,6 +26,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isAuthenticated: auth.isAuthenticated,
           adminId: auth.adminId,
           isSetupComplete: auth.isSetupComplete,
+          adminExists: auth.adminExists ?? false,
           loading: false,
         })
       } catch (error) {
@@ -46,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: true,
         adminId: response.adminId,
         isSetupComplete: true,
+        adminExists: true,
         loading: false,
       })
     } catch (error) {
@@ -60,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setState({
         isAuthenticated: false,
         loading: false,
+        adminExists: false,
       })
     } catch (error) {
       console.error('Logout failed:', error)
@@ -73,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isAuthenticated: auth.isAuthenticated,
         adminId: auth.adminId,
         isSetupComplete: auth.isSetupComplete,
+        adminExists: auth.adminExists ?? false,
         loading: false,
       })
     } catch (error) {

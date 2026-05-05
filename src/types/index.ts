@@ -67,6 +67,7 @@ export interface AuthState {
   isAuthenticated: boolean
   adminId?: string
   isSetupComplete?: boolean
+  adminExists?: boolean
   loading: boolean
 }
 
