@@ -173,10 +173,11 @@ export function PublicView() {
           ))}
         </div>
 
-        <div className="border-t border-slate-800/80 p-3 lg:p-4 mt-auto">
-          <div className="rounded-2xl border border-slate-800/80 bg-white/[0.03] p-3 lg:p-4">
-            <div className="text-sm font-medium text-white">Projekt publiczny</div>
-            <div className="mt-1 text-xs leading-5 text-slate-400">Każdy może przeglądać postępy</div>
+        <div className="mt-auto p-3 lg:p-4">
+          <div className="rounded-2xl border border-slate-800/80 bg-[#0f141b] p-3 lg:p-4 shadow-[0_0_0_1px_rgba(15,23,42,0.7)]">
+            <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Nightly Release</div>
+            <div className="mt-1 text-sm font-medium text-white">2026-05-05</div>
+            <div className="mt-1 text-xs leading-5 text-slate-400">Latest build deployed to the public view.</div>
           </div>
         </div>
       </aside>
@@ -234,7 +235,6 @@ export function PublicView() {
             >
               Szczegóły
             </button>
-            <a href="/auth/login" className="ml-auto pb-3 text-slate-400 hover:text-slate-300">GitHub</a>
           </div>
 
           {/* Content */}
