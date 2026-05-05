@@ -17,6 +17,13 @@ export function AdminPanel() {
     name: '',
     description: '',
     icon: '📱',
+    priority: 'medium' as const,
+    progress: 0,
+    startDate: new Date().toISOString().split('T')[0],
+    lastUpdate: new Date().toISOString(),
+    teamSize: 0,
+    technologies: [] as string[],
+    goals: [] as string[],
   })
   const [newStageData, setNewStageData] = useState({
     name: '',
@@ -71,7 +78,18 @@ export function AdminPanel() {
         status: 'active',
       })
       setProjects([...projects, newProject])
-      setNewProjectData({ name: '', description: '', icon: '📱' })
+      setNewProjectData({ 
+        name: '', 
+        description: '', 
+        icon: '📱',
+        priority: 'medium',
+        progress: 0,
+        startDate: new Date().toISOString().split('T')[0],
+        lastUpdate: new Date().toISOString(),
+        teamSize: 0,
+        technologies: [],
+        goals: [],
+      })
       setShowNewProjectForm(false)
     } catch (error) {
       console.error('Failed to create project:', error)
