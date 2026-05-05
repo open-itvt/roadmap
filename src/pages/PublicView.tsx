@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { useState, useEffect } from 'react'
 import {
   FaBars,
@@ -10,7 +11,6 @@ import {
   FaCode,
   FaBullseye,
   FaExternalLinkAlt,
-  FaChevronDown,
   FaCheckCircle,
   FaCircle,
   FaExclamationTriangle,
@@ -103,6 +103,13 @@ const SAMPLE_STAGES: Stage[] = [
   },
 ]
 
+function getBuildDate(): string {
+  const buildDate = (import.meta.env as Record<string, string | undefined>).VITE_BUILD_DATE
+  if (buildDate) return buildDate
+  const today = new Date()
+  return today.toISOString().split('T')[0]
+}
+
 export function PublicView() {
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
@@ -189,7 +196,7 @@ export function PublicView() {
       <div className="mt-auto p-3 lg:p-4">
         <div className="rounded-2xl border border-slate-800/80 bg-[#0f141b] p-3 lg:p-4 shadow-[0_0_0_1px_rgba(15,23,42,0.7)]">
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Nightly Release</div>
-          <div className="mt-1 text-sm font-medium text-white">2026-05-05</div>
+          <div className="mt-1 text-sm font-medium text-white">{getBuildDate()}</div>
           <div className="mt-1 text-xs leading-5 text-slate-400">Latest build deployed to the public view.</div>
         </div>
       </div>
@@ -229,9 +236,14 @@ export function PublicView() {
             >
               <FaBars />
             </button>
-            <div className="min-w-0 text-right">
-              <div className="truncate text-sm font-semibold text-white">Roadmapa</div>
-              <div className="text-xs text-slate-400">Public view</div>
+            <div className="flex items-center gap-2">
+              <div className="min-w-0 text-right">
+                <div className="truncate text-sm font-semibold text-white">Roadmapa</div>
+                <div className="text-xs text-slate-400">Public view</div>
+              </div>
+              <a href="/auth/login" className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100 flex-shrink-0" aria-label="GitHub login">
+                <FaExternalLinkAlt className="text-sm" />
+              </a>
             </div>
           </div>
 
@@ -248,20 +260,7 @@ export function PublicView() {
           </div>
 
           {/* Project Selector Mobile */}
-          {projects.length > 0 && (
-            <div className="mb-5 rounded-2xl border border-white/6 bg-white/[0.03] p-3 lg:hidden">
-              <div className="flex items-center justify-between rounded-xl border border-white/6 bg-black/20 px-3 py-2.5">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg"><FaCode /></span>
-                  <div>
-                    <div className="text-sm font-medium">{selectedProject?.name ?? 'Wybierz projekt'}</div>
-                    <div className="text-xs text-slate-400">Bieżący projekt</div>
-                  </div>
-                </div>
-                <FaChevronDown className="text-slate-400" />
-              </div>
-            </div>
-          )}
+          
 
           {/* Tabs */}
           <div className="mb-6 flex items-center gap-6 border-b border-white/6 text-sm">
