@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FaEye, FaEyeSlash, FaKey } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { authApi } from '@/api/auth'
@@ -137,7 +138,7 @@ export function LoginPage() {
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-300"
               >
-                {showPassword ? '👁️' : '👁️‍🗨️'}
+                {showPassword ? <FaEye /> : <FaEyeSlash />}
               </button>
             </div>
           </div>
@@ -182,7 +183,7 @@ export function LoginPage() {
             disabled={loading}
             className="w-full px-4 py-2 bg-slate-900 border border-slate-700 text-white rounded font-medium hover:border-slate-600 disabled:opacity-50 transition"
           >
-            {loading ? 'Authenticating...' : '🔑 Passkey / WebAuthn'}
+            {loading ? 'Authenticating...' : (<><FaKey className="inline-block mr-2" /> Passkey / WebAuthn</>)}
           </button>
 
           <button

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { FaEye, FaEyeSlash, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 import { generateRandomPassword, validatePasswordStrength } from '@/utils/crypto'
@@ -177,7 +178,7 @@ export function SetupPage() {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-300"
                 >
-                  {showPassword ? '👁️' : '👁️‍🗨️'}
+                  {showPassword ? <FaEye /> : <FaEyeSlash />}
                 </button>
               </div>
               <button
@@ -195,7 +196,7 @@ export function SetupPage() {
                 <div className="flex items-center gap-2">
                   <div className={`h-2 flex-1 rounded ${passwordStrength.isStrong ? 'bg-green-600' : 'bg-orange-600'}`}></div>
                   <span className="text-xs font-medium">
-                    {passwordStrength.isStrong ? '✓ Strong' : '⚠ Weak'}
+                    {passwordStrength.isStrong ? (<><FaCheckCircle className="inline-block mr-1" /> Strong</>) : (<><FaExclamationTriangle className="inline-block mr-1" /> Weak</>)}
                   </span>
                 </div>
                 {passwordStrength.feedback.length > 0 && (

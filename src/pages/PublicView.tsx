@@ -1,4 +1,19 @@
 import { useState, useEffect } from 'react'
+import {
+  FaGlobe,
+  FaFileAlt,
+  FaChartBar,
+  FaClock,
+  FaUsers,
+  FaBolt,
+  FaCode,
+  FaBullseye,
+  FaExternalLinkAlt,
+  FaChevronDown,
+  FaCheckCircle,
+  FaCircle,
+  FaExclamationTriangle,
+} from 'react-icons/fa'
 import type { Project, Stage } from '@/types'
 
 // Sample data for development/demo
@@ -7,7 +22,7 @@ const SAMPLE_PROJECTS: Project[] = [
     id: 'mobile-app-1',
     name: 'Aplikacja mobilna',
     description: 'Aplikacja mobilna dla klientów, która umożliwia zarządzanie zamówieniami, przeglądanie ofert i kontakt z obsługą',
-    icon: '📱',
+    icon: 'mobile-app',
     status: 'active',
     priority: 'high',
     progress: 65,
@@ -33,7 +48,7 @@ const SAMPLE_STAGES: Stage[] = [
     name: 'Analiza wymagań',
     description: 'Zebranie i analiza wymagań projektowych',
     status: 'completed',
-    icon: '✓',
+    icon: 'check',
     order: 1,
     progress: 100,
     createdAt: '2024-04-12T00:00:00Z',
@@ -45,7 +60,7 @@ const SAMPLE_STAGES: Stage[] = [
     name: 'Projekt UI/UX',
     description: 'Projektowanie interfejsu użytkownika',
     status: 'completed',
-    icon: '✓',
+    icon: 'check',
     order: 2,
     progress: 100,
     createdAt: '2024-05-12T00:00:00Z',
@@ -57,7 +72,7 @@ const SAMPLE_STAGES: Stage[] = [
     name: 'Implementacja',
     description: 'Kodowanie i implementacja funkcjonalności',
     status: 'in-progress',
-    icon: '●',
+    icon: 'dot',
     order: 3,
     progress: 65,
     createdAt: '2024-05-26T00:00:00Z',
@@ -151,7 +166,7 @@ export function PublicView() {
               }`}
             >
               <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg flex-shrink-0">
-                {project.icon}
+                <FaCode className="text-lg" />
               </span>
               <span className="truncate text-sm font-medium">{project.name}</span>
             </button>
@@ -177,7 +192,7 @@ export function PublicView() {
             </div>
             <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
               <span>GitHub</span>
-              <span>↗</span>
+              <FaExternalLinkAlt className="text-sm" />
             </a>
           </div>
 
@@ -186,13 +201,13 @@ export function PublicView() {
             <div className="mb-5 rounded-2xl border border-white/8 bg-white/[0.03] p-3 lg:hidden">
               <div className="flex items-center justify-between rounded-xl border border-white/8 bg-black/20 px-3 py-2.5">
                 <div className="flex items-center gap-3">
-                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg">{selectedProject?.icon ?? '◻'}</span>
+                  <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg"><FaCode /></span>
                   <div>
                     <div className="text-sm font-medium">{selectedProject?.name ?? 'Wybierz projekt'}</div>
                     <div className="text-xs text-slate-400">Bieżący projekt</div>
                   </div>
                 </div>
-                <span className="text-slate-400">⌄</span>
+                <FaChevronDown className="text-slate-400" />
               </div>
             </div>
           )}
@@ -293,7 +308,16 @@ function RoadmapContent({ project }: { project: Project }) {
                   stage.status === 'blocked' ? 'bg-orange-500 text-white' :
                   'bg-slate-700 text-slate-400'
                 }`}>
-                  {stage.status === 'completed' ? '✓' : stage.status === 'in-progress' ? '●' : stage.icon || (index + 1)}
+                  {stage.status === 'completed' ? (
+                    <FaCheckCircle />
+                  ) : stage.status === 'in-progress' ? (
+                    <FaCircle />
+                  ) : stage.status === 'blocked' ? (
+                    <FaExclamationTriangle />
+                  ) : (
+                    // fallback: show stage.icon if it's a short string/number, otherwise a generic icon
+                    (typeof stage.icon === 'string' && stage.icon.length <= 2) ? stage.icon : <FaBullseye />
+                  )}
                 </div>
                 {index < stages.length - 1 && (
                   <div className="w-px h-12 bg-gradient-to-b from-white/25 to-white/5 my-2"></div>
@@ -334,7 +358,7 @@ function RoadmapContent({ project }: { project: Project }) {
 
       {/* Footer */}
       <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-12 pt-6 border-t border-white/8">
-        <span>🌐</span>
+        <FaGlobe />
         <span>Każdy może przeglądać postępy</span>
       </div>
     </div>
@@ -375,12 +399,12 @@ function DetailsContent({ project }: { project: Project }) {
     <div className="space-y-6 pb-10">
       {/* Description Section */}
       <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-6">
-        <div className="flex items-center gap-3 mb-4">
-          <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10">
-            <span className="text-lg">📄</span>
-          </span>
-          <h3 className="text-lg font-semibold">Opis</h3>
-        </div>
+          <div className="flex items-center gap-3 mb-4">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-white/10">
+              <FaFileAlt />
+            </span>
+            <h3 className="text-lg font-semibold">Opis</h3>
+          </div>
         <p className="text-slate-300 leading-relaxed">{project.description}</p>
       </div>
 
@@ -389,7 +413,7 @@ function DetailsContent({ project }: { project: Project }) {
         {/* Status */}
         <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">✓</span>
+            <FaCheckCircle />
             <span className="text-xs font-semibold text-slate-400 uppercase">Status</span>
           </div>
           <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${statusStyle.color}`}>
@@ -401,7 +425,7 @@ function DetailsContent({ project }: { project: Project }) {
         {/* Progress */}
         <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">📊</span>
+            <FaChartBar />
             <span className="text-xs font-semibold text-slate-400 uppercase">Postęp ogólny</span>
           </div>
           <div className="flex items-baseline gap-2">
@@ -418,7 +442,7 @@ function DetailsContent({ project }: { project: Project }) {
         {/* Last Update */}
         <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-2">
-            <span className="text-lg">🕐</span>
+            <FaClock />
             <span className="text-xs font-semibold text-slate-400 uppercase">Ostatnia aktualizacja</span>
           </div>
           <p className="text-sm text-slate-300">{new Date(project.lastUpdate).toLocaleDateString('pl-PL')}</p>
@@ -431,7 +455,7 @@ function DetailsContent({ project }: { project: Project }) {
         {/* Team */}
         <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">👥</span>
+            <FaUsers />
             <span className="text-xs font-semibold text-slate-400 uppercase">Zespół</span>
           </div>
           <p className="text-2xl font-bold text-white">{project.teamSize}</p>
@@ -441,7 +465,7 @@ function DetailsContent({ project }: { project: Project }) {
         {/* Priority */}
         <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-4">
           <div className="flex items-center gap-2 mb-4">
-            <span className="text-lg">⚡</span>
+            <FaBolt />
             <span className="text-xs font-semibold text-slate-400 uppercase">Priorytet</span>
           </div>
           <div className={`inline-block px-3 py-1 rounded-full text-sm font-medium ${priorityStyle.color}`}>
@@ -454,7 +478,7 @@ function DetailsContent({ project }: { project: Project }) {
       {project.technologies && project.technologies.length > 0 && (
         <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-6">
           <div className="flex items-center gap-3 mb-4">
-            <span className="text-lg">💻</span>
+            <FaCode />
             <h3 className="text-lg font-semibold">Technologie</h3>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -473,8 +497,8 @@ function DetailsContent({ project }: { project: Project }) {
       {/* Project Goals */}
       {project.goals && project.goals.length > 0 && (
         <div className="rounded-2xl border border-white/8 bg-[#0f141b] p-6">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-lg">🎯</span>
+            <div className="flex items-center gap-3 mb-4">
+            <FaBullseye />
             <h3 className="text-lg font-semibold">Cele projektu</h3>
           </div>
           <ul className="space-y-2">
@@ -492,7 +516,7 @@ function DetailsContent({ project }: { project: Project }) {
 
       {/* Footer */}
       <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-8 pt-6 border-t border-white/8">
-        <span>🌐</span>
+        <FaGlobe />
         <span>Każdy może przeglądać postępy</span>
       </div>
     </div>

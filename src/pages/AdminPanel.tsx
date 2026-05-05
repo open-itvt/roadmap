@@ -1,4 +1,15 @@
 import { useState, useEffect } from 'react'
+import {
+  FaCode,
+  FaChevronDown,
+  FaBars,
+  FaPlus,
+  FaEdit,
+  FaClone,
+  FaTrashAlt,
+  FaChevronLeft,
+  FaChevronRight,
+} from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { projectsApi, stagesApi } from '@/api/endpoints'
@@ -16,7 +27,7 @@ export function AdminPanel() {
   const [newProjectData, setNewProjectData] = useState({
     name: '',
     description: '',
-    icon: '📱',
+    icon: '',
     priority: 'medium' as const,
     progress: 0,
     startDate: new Date().toISOString().split('T')[0],
@@ -81,7 +92,7 @@ export function AdminPanel() {
       setNewProjectData({ 
         name: '', 
         description: '', 
-        icon: '📱',
+        icon: '',
         priority: 'medium',
         progress: 0,
         startDate: new Date().toISOString().split('T')[0],
@@ -176,9 +187,9 @@ export function AdminPanel() {
                 }`}
                 onClick={() => setSelectedProject(project)}
               >
-                <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg">{project.icon}</span>
+                <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg"><FaCode /></span>
                 <span className="truncate text-sm font-medium">{project.name}</span>
-                <span className="ml-auto text-slate-400">⌄</span>
+                <FaChevronDown className="ml-auto text-slate-400" />
               </div>
             ))}
           </div>
@@ -195,7 +206,7 @@ export function AdminPanel() {
           <div className="mx-auto max-w-[1120px] px-4 py-4 sm:px-6 lg:px-10 lg:py-8">
             <div className="mb-5 flex items-center justify-between gap-3 lg:hidden">
               <button className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] p-2.5 text-slate-200">
-                <span className="text-lg">☰</span>
+                <FaBars />
               </button>
               <div className="text-sm font-medium">Roadmap Admin</div>
               <button onClick={handleLogout} className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300">Wyloguj</button>
@@ -210,7 +221,7 @@ export function AdminPanel() {
                 onClick={() => setShowNewProjectForm(true)}
                 className="inline-flex items-center gap-2 rounded-xl bg-violet-500 px-4 py-2.5 text-sm font-medium text-white shadow-lg shadow-violet-500/25 transition hover:bg-violet-400"
               >
-                <span>＋</span>
+                <FaPlus />
                 <span className="hidden sm:inline">Dodaj projekt</span>
                 <span className="sm:hidden">Dodaj</span>
               </button>
@@ -251,8 +262,8 @@ export function AdminPanel() {
                           <td className="py-4 pr-4 text-slate-300">{new Date(project.createdAt).toLocaleDateString('pl-PL')}</td>
                           <td className="py-4 text-right">
                             <div className="inline-flex items-center gap-2">
-                              <button className="rounded-lg border border-white/8 p-2 text-slate-300 hover:bg-white/5">✎</button>
-                              <button className="rounded-lg border border-white/8 p-2 text-slate-300 hover:bg-white/5">⧉</button>
+                              <button className="rounded-lg border border-white/8 p-2 text-slate-300 hover:bg-white/5"><FaEdit /></button>
+                              <button className="rounded-lg border border-white/8 p-2 text-slate-300 hover:bg-white/5"><FaClone /></button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation()
@@ -260,8 +271,8 @@ export function AdminPanel() {
                                 }}
                                 className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10"
                               >
-                                🗑
-                              </button>
+                                <FaTrashAlt />
+                                </button>
                             </div>
                           </td>
                         </tr>
@@ -273,9 +284,9 @@ export function AdminPanel() {
               <div className="mt-4 flex items-center justify-between text-xs text-slate-500">
                 <span>1–{projects.length} z {projects.length} projektów</span>
                 <div className="flex items-center gap-2">
-                  <button className="rounded-lg border border-white/8 px-2.5 py-1.5">‹</button>
+                  <button className="rounded-lg border border-white/8 px-2.5 py-1.5"><FaChevronLeft /></button>
                   <button className="rounded-lg border border-violet-400/45 bg-violet-500/15 px-3 py-1.5 text-violet-200">1</button>
-                  <button className="rounded-lg border border-white/8 px-2.5 py-1.5">›</button>
+                  <button className="rounded-lg border border-white/8 px-2.5 py-1.5"><FaChevronRight /></button>
                 </div>
               </div>
             </div>
@@ -354,7 +365,7 @@ export function AdminPanel() {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="mb-1 flex items-center gap-3">
-                            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-sm">{stage.icon || '•'}</span>
+                            <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-sm">{(stage.icon && stage.icon.length <= 2) ? stage.icon : <FaCode />}</span>
                             <h3 className="font-semibold">{stage.name}</h3>
                             <span className="rounded-full border border-white/10 px-2 py-0.5 text-[11px] text-slate-400">{stage.order + 1}</span>
                           </div>
@@ -371,9 +382,9 @@ export function AdminPanel() {
                           </div>
                         </div>
                         <div className="flex items-center gap-2 text-slate-400">
-                          <button className="rounded-lg border border-white/8 p-2 hover:bg-white/5">✎</button>
-                          <button className="rounded-lg border border-white/8 p-2 hover:bg-white/5">⧉</button>
-                          <button onClick={() => handleDeleteStage(stage.id)} className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10">🗑</button>
+                          <button className="rounded-lg border border-white/8 p-2 hover:bg-white/5"><FaEdit /></button>
+                          <button className="rounded-lg border border-white/8 p-2 hover:bg-white/5"><FaClone /></button>
+                          <button onClick={() => handleDeleteStage(stage.id)} className="rounded-lg border border-red-500/20 p-2 text-red-300 hover:bg-red-500/10"><FaTrashAlt /></button>
                         </div>
                       </div>
                     </div>
@@ -407,7 +418,7 @@ export function AdminPanel() {
                       />
                     </div>
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-slate-300">Icon (emoji)</label>
+                      <label className="mb-2 block text-sm font-medium text-slate-300">Icon (optional)</label>
                       <input
                         type="text"
                         value={newProjectData.icon}
