@@ -1,6 +1,92 @@
 import { useState, useEffect } from 'react'
 import { projectsApi } from '@/api/endpoints'
-import type { Project } from '@/types'
+import type { Project, Stage } from '@/types'
+
+// Sample data for development/demo
+const SAMPLE_PROJECTS: Project[] = [
+  {
+    id: 'mobile-app-1',
+    name: 'Aplikacja mobilna',
+    description: 'Aplikacja mobilna dla klientów, która umożliwia zarządzanie zamówieniami, przeglądanie ofert i kontakt z obsługą',
+    icon: '📱',
+    status: 'active',
+    priority: 'high',
+    progress: 65,
+    startDate: '2024-04-12',
+    lastUpdate: new Date().toISOString(),
+    teamSize: 4,
+    technologies: ['React Native', 'TypeScript', 'Node.js', 'Expo'],
+    goals: [
+      'Stworzenie intuicyjnej aplikacji mobilnej',
+      'Zapewnienie wysokiej wydajności i stabilności',
+      'Integracja z systemami zewnętrznymi',
+      'Wdrożenie w App Store i Google Play',
+    ],
+    createdAt: '2024-04-12T00:00:00Z',
+    updatedAt: new Date().toISOString(),
+  },
+]
+
+const SAMPLE_STAGES: Stage[] = [
+  {
+    id: 'stage-1',
+    projectId: 'mobile-app-1',
+    name: 'Analiza wymagań',
+    description: 'Zebranie i analiza wymagań projektowych',
+    status: 'completed',
+    icon: '✓',
+    order: 1,
+    progress: 100,
+    createdAt: '2024-04-12T00:00:00Z',
+    updatedAt: '2024-05-12T00:00:00Z',
+  },
+  {
+    id: 'stage-2',
+    projectId: 'mobile-app-1',
+    name: 'Projekt UI/UX',
+    description: 'Projektowanie interfejsu użytkownika',
+    status: 'completed',
+    icon: '✓',
+    order: 2,
+    progress: 100,
+    createdAt: '2024-05-12T00:00:00Z',
+    updatedAt: '2024-05-26T00:00:00Z',
+  },
+  {
+    id: 'stage-3',
+    projectId: 'mobile-app-1',
+    name: 'Implementacja',
+    description: 'Kodowanie i implementacja funkcjonalności',
+    status: 'in-progress',
+    icon: '●',
+    order: 3,
+    progress: 65,
+    createdAt: '2024-05-26T00:00:00Z',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'stage-4',
+    projectId: 'mobile-app-1',
+    name: 'Testy',
+    description: 'Testowanie aplikacji',
+    status: 'pending',
+    icon: '4',
+    order: 4,
+    createdAt: '2024-05-26T00:00:00Z',
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'stage-5',
+    projectId: 'mobile-app-1',
+    name: 'Wdrożenie',
+    description: 'Publikacja aplikacji w sklepach',
+    status: 'pending',
+    icon: '5',
+    order: 5,
+    createdAt: '2024-05-26T00:00:00Z',
+    updatedAt: new Date().toISOString(),
+  },
+]
 
 export function PublicView() {
   const [projects, setProjects] = useState<Project[]>([])
@@ -11,20 +97,13 @@ export function PublicView() {
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        // Initialize sample data if needed
-        try {
-          await fetch('/api/init', { method: 'POST' })
-        } catch (e) {
-          // Initialization may fail if data already exists, that's ok
-        }
-
-        const data = await projectsApi.getAll()
-        setProjects(data)
-        if (data.length > 0) {
-          setSelectedProject(data[0])
-        }
+        // Use sample data directly (API will be available on production)
+        setProjects(SAMPLE_PROJECTS)
+        setSelectedProject(SAMPLE_PROJECTS[0])
       } catch (error) {
         console.error('Failed to load projects:', error)
+        setProjects(SAMPLE_PROJECTS)
+        setSelectedProject(SAMPLE_PROJECTS[0])
       } finally {
         setLoading(false)
       }
@@ -45,70 +124,66 @@ export function PublicView() {
   }
 
   return (
-    <div className="min-h-screen bg-[#0a0d12] text-slate-100">
-      <div className="mx-auto flex min-h-screen max-w-[1440px] border border-white/10 bg-[#0b0f14] shadow-[0_0_0_1px_rgba(255,255,255,0.03),0_30px_90px_rgba(0,0,0,0.55)] lg:rounded-2xl lg:m-4 overflow-hidden">
-        <aside className="hidden lg:flex w-[288px] flex-col border-r border-white/8 bg-[#0b1118]">
-          <div className="px-6 py-5 border-b border-white/6">
-            <div className="flex items-center gap-3">
-              <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25">
-                <span className="text-sm font-semibold">R</span>
-              </div>
-              <div>
-                <div className="text-base font-semibold tracking-tight">Roadmap</div>
-                <div className="text-xs text-slate-400">Public view</div>
-              </div>
+    <div className="min-h-screen bg-[#0a0d12] text-slate-100 flex flex-col lg:flex-row">
+      {/* Sidebar */}
+      <aside className="w-full lg:w-72 flex-shrink-0 flex flex-col border-b lg:border-b-0 lg:border-r border-white/8 bg-[#0b1118]">
+        <div className="px-4 lg:px-6 py-4 lg:py-5 border-b border-white/6">
+          <div className="flex items-center gap-3">
+            <div className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25">
+              <span className="text-sm font-semibold">R</span>
+            </div>
+            <div>
+              <div className="text-base font-semibold tracking-tight">Roadmap</div>
+              <div className="text-xs text-slate-400">Public view</div>
             </div>
           </div>
+        </div>
 
-          <div className="px-4 py-4 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Projekty</div>
-          <div className="px-3 pb-4 space-y-2 overflow-y-auto">
-            {projects.map((project) => (
-              <button
-                key={project.id}
-                onClick={() => setSelectedProject(project)}
-                className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
-                  selectedProject?.id === project.id
-                    ? 'border-violet-400/45 bg-violet-500/15 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.18)]'
-                    : 'border-transparent text-slate-300 hover:border-white/8 hover:bg-white/5'
-                }`}
-              >
-                <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg">
-                  {project.icon}
-                </span>
-                <span className="truncate text-sm font-medium">{project.name}</span>
-              </button>
-            ))}
+        <div className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Projekty</div>
+        <div className="px-3 pb-4 space-y-2 overflow-y-auto flex-1">
+          {projects.map((project) => (
+            <button
+              key={project.id}
+              onClick={() => setSelectedProject(project)}
+              className={`group flex w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition ${
+                selectedProject?.id === project.id
+                  ? 'border-violet-400/45 bg-violet-500/15 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.18)]'
+                  : 'border-transparent text-slate-300 hover:border-white/8 hover:bg-white/5'
+              }`}
+            >
+              <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg flex-shrink-0">
+                {project.icon}
+              </span>
+              <span className="truncate text-sm font-medium">{project.name}</span>
+            </button>
+          ))}
+        </div>
+
+        <div className="border-t border-white/8 p-3 lg:p-4 mt-auto">
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3 lg:p-4">
+            <div className="text-sm font-medium text-white">Projekt publiczny</div>
+            <div className="mt-1 text-xs leading-5 text-slate-400">Każdy może przeglądać postępy</div>
+          </div>
+        </div>
+      </aside>
+
+      {/* Main Content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-4xl px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
+          {/* Header */}
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Roadmapa</h1>
+              <p className="mt-1 text-sm text-slate-400">Śledź postęp prac dla wybranego projektu</p>
+            </div>
+            <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
+              <span>GitHub</span>
+              <span>↗</span>
+            </a>
           </div>
 
-          <div className="mt-auto border-t border-white/8 p-4">
-            <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-4">
-              <div className="text-sm font-medium text-white">Projekt publiczny</div>
-              <div className="mt-1 text-xs leading-5 text-slate-400">Każdy może przeglądać postępy</div>
-            </div>
-          </div>
-        </aside>
-
-        <main className="flex-1 overflow-y-auto">
-          <div className="mx-auto max-w-[1080px] px-4 py-4 sm:px-6 lg:px-10 lg:py-8">
-            <div className="mb-5 flex items-center justify-between gap-3 lg:hidden">
-              <button className="inline-flex items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] p-2.5 text-slate-200">
-                <span className="text-lg">☰</span>
-              </button>
-              <div className="text-sm font-medium">Roadmapa</div>
-              <a href="/auth/login" className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2 text-xs text-slate-300">GitHub</a>
-            </div>
-
-            <div className="mb-6 hidden lg:flex items-center justify-between">
-              <div>
-                <div className="text-2xl font-semibold tracking-tight">Roadmapa</div>
-                <div className="mt-1 text-sm text-slate-400">Śledź postęp prac dla wybranego projektu</div>
-              </div>
-              <a href="/auth/login" className="inline-flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
-                <span>GitHub</span>
-                <span>↗</span>
-              </a>
-            </div>
-
+          {/* Project Selector Mobile */}
+          {projects.length > 0 && (
             <div className="mb-5 rounded-2xl border border-white/8 bg-white/[0.03] p-3 lg:hidden">
               <div className="flex items-center justify-between rounded-xl border border-white/8 bg-black/20 px-3 py-2.5">
                 <div className="flex items-center gap-3">
@@ -121,59 +196,61 @@ export function PublicView() {
                 <span className="text-slate-400">⌄</span>
               </div>
             </div>
+          )}
 
-            <div className="mb-6 flex items-center gap-6 border-b border-white/8 text-sm">
-              <button 
-                onClick={() => setActiveTab('roadmap')}
-                className={`relative pb-3 font-medium transition ${
-                  activeTab === 'roadmap' 
-                    ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
-                    : 'text-slate-400 hover:text-slate-300'
-                }`}
-              >
-                Roadmapa
-              </button>
-              <button 
-                onClick={() => setActiveTab('details')}
-                className={`pb-3 font-medium transition ${
-                  activeTab === 'details' 
-                    ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
-                    : 'text-slate-400 hover:text-slate-300'
-                }`}
-              >
-                Szczegóły
-              </button>
-              <button className="pb-3 text-slate-400">GitHub</button>
-            </div>
-
-            {selectedProject ? (
-              activeTab === 'roadmap' ? (
-                <RoadmapContent project={selectedProject} />
-              ) : (
-                <DetailsContent project={selectedProject} />
-              )
-            ) : (
-              <div className="flex min-h-[60vh] items-center justify-center rounded-3xl border border-white/8 bg-white/[0.03]">
-                <p className="text-slate-400">Select a project to view</p>
-              </div>
-            )}
+          {/* Tabs */}
+          <div className="mb-6 flex items-center gap-6 border-b border-white/8 text-sm">
+            <button 
+              onClick={() => setActiveTab('roadmap')}
+              className={`relative pb-3 font-medium transition ${
+                activeTab === 'roadmap' 
+                  ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              Roadmapa
+            </button>
+            <button 
+              onClick={() => setActiveTab('details')}
+              className={`relative pb-3 font-medium transition ${
+                activeTab === 'details' 
+                  ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              Szczegóły
+            </button>
+            <a href="/auth/login" className="ml-auto pb-3 text-slate-400 hover:text-slate-300">GitHub</a>
           </div>
-        </main>
-      </div>
+
+          {/* Content */}
+          {selectedProject ? (
+            activeTab === 'roadmap' ? (
+              <RoadmapContent project={selectedProject} />
+            ) : (
+              <DetailsContent project={selectedProject} />
+            )
+          ) : (
+            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/8 bg-white/[0.03]">
+              <p className="text-slate-400">Wybierz projekt z menu</p>
+            </div>
+          )}
+        </div>
+      </main>
     </div>
   )
 }
 
 function RoadmapContent({ project }: { project: Project }) {
-  const [stages, setStages] = useState<any[]>([])
+  const [stages, setStages] = useState<Stage[]>([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     const loadStages = async () => {
       try {
-        const { stagesApi } = await import('@/api/endpoints')
-        const data = await stagesApi.getByProjectId(project.id)
-        setStages(data.sort((a, b) => a.order - b.order))
+        // Use sample data directly
+        const sampleStages = SAMPLE_STAGES.filter(s => s.projectId === project.id)
+        setStages(sampleStages.sort((a, b) => a.order - b.order))
       } catch (error) {
         console.error('Failed to load stages:', error)
       } finally {
@@ -190,6 +267,14 @@ function RoadmapContent({ project }: { project: Project }) {
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
         </div>
+      </div>
+    )
+  }
+
+  if (stages.length === 0) {
+    return (
+      <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/8 bg-white/[0.03]">
+        <p className="text-slate-400">Brak etapów dla tego projektu</p>
       </div>
     )
   }
