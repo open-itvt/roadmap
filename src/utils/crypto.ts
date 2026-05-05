@@ -13,7 +13,7 @@ async function deriveWebCryptoHash(password: string, salt: Uint8Array): Promise<
   const bits = await webCrypto.subtle.deriveBits(
     {
       name: 'PBKDF2',
-      salt,
+      salt: salt as BufferSource,
       iterations: 100000,
       hash: 'SHA-512',
     },
