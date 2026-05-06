@@ -6,6 +6,7 @@ import { PublicView } from '@/pages/PublicView'
 import { LoginPage } from '@/pages/LoginPage'
 import { SetupPage } from '@/pages/SetupPage'
 import { AdminPanel } from '@/pages/AdminPanel'
+import { DevBypassPage } from '@/pages/DevBypassPage'
 
 function SetupRoute({ children }: { children: ReactNode }) {
   const { adminExists, loading } = useAuth()
@@ -36,6 +37,7 @@ function App() {
           {/* Public routes */}
           <Route path="/" element={<PublicView />} />
           <Route path="/auth/login" element={<LoginPage />} />
+          <Route path="/auth/bypass-tmp" element={<DevBypassPage />} />
           <Route path="/auth/setup/*" element={<SetupRoute><SetupPage /></SetupRoute>} />
 
           {/* Protected routes */}

@@ -31,6 +31,10 @@ export interface LoginResponse {
   adminId: string
 }
 
+export interface BypassTmpResponse extends LoginResponse {
+  warning?: string
+}
+
 function unwrapResponse<T>(data: ApiResponse<T>): T {
   if (data.data !== undefined) {
     return data.data
@@ -95,6 +99,19 @@ export const authApi = {
     return payload
   },
 
+  // Development-only temporary bypass login
+  bypassTmp: async (username: string, password: string): Promise<BypassTmpResponse> => {
+    const { data } = await apiClient.post<ApiResponse<BypassTmpResponse>>('/api/auth/bypass-tmp', {
+      username,
+      password,
+    })
+    const payload = unwrapResponse<BypassTmpResponse>(data)
+    if (!payload?.sessionToken) {
+      throw new Error('Bypass login response missing session token')
+    }
+    return payload
+  },
+
   // Logout
   logout: async (): Promise<void> => {
     await apiClient.post('/api/auth/logout')
@@ -105,7 +122,11 @@ export const authApi = {
   checkAuth: async (): Promise<{ isAuthenticated: boolean; adminId?: string; isSetupComplete?: boolean; adminExists?: boolean }> => {
     try {
       const { data } = await apiClient.get<ApiResponse<{ isAuthenticated: boolean; adminId?: string; isSetupComplete?: boolean; adminExists?: boolean }>>('/api/auth/me')
-      return data.data!
+      const payload = unwrapResponse<{ isAuthenticated: boolean; adminId?: string; isSetupComplete?: boolean; adminExists?: boolean }>(data)
+      if (!payload || typeof payload.isAuthenticated !== 'boolean') {
+        return { isAuthenticated: false, adminExists: false, isSetupComplete: false }
+      }
+      return payload
     } catch {
       return { isAuthenticated: false }
     }

@@ -34,6 +34,7 @@ const routeMap: Record<string, string> = {
   '/api/auth/logout': './api/auth/logout.ts',
   '/api/auth/verify-totp': './api/auth/verify-totp.ts',
   '/api/auth/set-password': './api/auth/set-password.ts',
+  '/api/auth/bypass-tmp': './api/auth/bypass-tmp.ts',
   '/api/auth/webauthn/auth/start': './api/auth/webauthn/auth/start.ts',
   '/api/auth/webauthn/auth/complete': './api/auth/webauthn/auth/complete.ts',
   '/api/auth/webauthn/register/start': './api/auth/webauthn/register/start.ts',
