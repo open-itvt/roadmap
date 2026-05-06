@@ -1,7 +1,41 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
+import {
+  FaRocket,
+  FaCogs,
+  FaMobileAlt,
+  FaCloud,
+  FaLock,
+  FaDatabase,
+  FaChartLine,
+  FaPaintBrush,
+  FaGlobe,
+  FaFolderOpen,
+} from 'react-icons/fa'
 import { projectsApi, stagesApi } from '@/api/endpoints'
 import type { Project, Stage } from '@/types'
+
+const PROJECT_ICON_COMPONENTS: Record<string, any> = {
+  rocket: FaRocket,
+  cogs: FaCogs,
+  mobile: FaMobileAlt,
+  cloud: FaCloud,
+  lock: FaLock,
+  database: FaDatabase,
+  chart: FaChartLine,
+  design: FaPaintBrush,
+  globe: FaGlobe,
+}
+
+function renderProjectIcon(value: string) {
+  const trimmed = value?.trim() || ''
+  if (!trimmed) return <FaFolderOpen />
+
+  const Icon = PROJECT_ICON_COMPONENTS[trimmed.toLowerCase()]
+  if (Icon) return <Icon />
+
+  return trimmed
+}
 
 export function ProjectView() {
   const { projectId } = useParams<{ projectId: string }>()
@@ -55,7 +89,7 @@ export function ProjectView() {
         <div className="mb-8">
           <div className="flex items-center gap-4 mb-4">
             <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center text-2xl">
-              {project.icon}
+              {renderProjectIcon(project.icon)}
             </div>
             <div>
               <h1 className="text-3xl font-bold">{project.name}</h1>

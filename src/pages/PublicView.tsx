@@ -16,6 +16,7 @@ import {
   FaExclamationTriangle,
 } from 'react-icons/fa'
 import type { Project, Stage } from '@/types'
+import { projectsApi, stagesApi } from '@/api/endpoints'
 
 // Sample data for development/demo
 const SAMPLE_PROJECTS: Project[] = [
@@ -120,7 +121,23 @@ export function PublicView() {
   useEffect(() => {
     const loadProjects = async () => {
       try {
-        // Use sample data directly (API will be available on production)
+        // If a session token exists (demo signed-in or dev), fetch live data from API
+        const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null
+        if (sessionToken) {
+          try {
+            const live = await projectsApi.getAll()
+            if (live && live.length > 0) {
+              setProjects(live)
+              setSelectedProject(live[0])
+              setLoading(false)
+              return
+            }
+          } catch (err) {
+            console.warn('Failed to load live projects, falling back to sample', err)
+          }
+        }
+
+        // Fallback to sample data
         setProjects(SAMPLE_PROJECTS)
         setSelectedProject(SAMPLE_PROJECTS[0])
       } catch (error) {
@@ -310,7 +327,18 @@ function RoadmapContent({ project }: { project: Project }) {
   useEffect(() => {
     const loadStages = async () => {
       try {
-        // Use sample data directly
+        const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null
+        if (sessionToken) {
+          try {
+            const liveStages = await stagesApi.getByProjectId(project.id)
+            setStages(liveStages.sort((a, b) => a.order - b.order))
+            return
+          } catch (err) {
+            console.warn('Failed to load live stages, falling back to sample', err)
+          }
+        }
+
+        // Fallback to sample data
         const sampleStages = SAMPLE_STAGES.filter(s => s.projectId === project.id)
         setStages(sampleStages.sort((a, b) => a.order - b.order))
       } catch (error) {

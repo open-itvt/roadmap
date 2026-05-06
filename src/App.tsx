@@ -5,8 +5,9 @@ import { ProtectedRoute } from '@/components/ProtectedRoute'
 import { PublicView } from '@/pages/PublicView'
 import { LoginPage } from '@/pages/LoginPage'
 import { SetupPage } from '@/pages/SetupPage'
-import { AdminPanel } from '@/pages/AdminPanel'
+import { AdminPanelScreen } from '@/pages/AdminPanelScreen'
 import { DevBypassPage } from '@/pages/DevBypassPage'
+import { DemoPage } from '@/pages/DemoPage'
 
 function SetupRoute({ children }: { children: ReactNode }) {
   const { adminExists, loading } = useAuth()
@@ -38,6 +39,7 @@ function App() {
           <Route path="/" element={<PublicView />} />
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/bypass-tmp" element={<DevBypassPage />} />
+          <Route path="/demo" element={<DemoPage />} />
           <Route path="/auth/setup/*" element={<SetupRoute><SetupPage /></SetupRoute>} />
 
           {/* Protected routes */}
@@ -45,7 +47,7 @@ function App() {
             path="/roadmap-manage"
             element={
               <ProtectedRoute requireSetup={true}>
-                <AdminPanel />
+                <AdminPanelScreen />
               </ProtectedRoute>
             }
           />

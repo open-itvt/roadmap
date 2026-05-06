@@ -71,6 +71,8 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '', `http://${req.headers.host}`)
   const pathname = url.pathname
 
+  // expose parsed query params on the request like Express (handlers expect req.query)
+  ;(req as any).query = Object.fromEntries(url.searchParams.entries())
   console.log(`${req.method} ${pathname}`)
 
   if (req.method === 'OPTIONS') {
@@ -79,7 +81,26 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  const handlerPath = routeMap[pathname]
+  // Support dynamic project routes (e.g. /api/projects/:id and /api/projects/:projectId/stages)
+  let handlerPath = routeMap[pathname]
+  if (!handlerPath) {
+    const parts = pathname.split('/').filter(Boolean) // ['api','projects', ...]
+    if (parts[0] === 'api' && parts[1] === 'projects') {
+      // /api/projects/:id
+      if (parts.length === 3) {
+        handlerPath = './api/projects/[id].ts'
+      }
+
+      // /api/projects/:projectId/stages
+      if (parts.length >= 4 && parts[3] === 'stages') {
+        if (parts.length === 4) {
+          handlerPath = './api/projects/[projectId]/stages.ts'
+        } else if (parts.length === 5) {
+          handlerPath = './api/projects/[projectId]/stages/[stageId].ts'
+        }
+      }
+    }
+  }
 
   if (!handlerPath) {
     res.writeHead(404, { 'Content-Type': 'application/json', ...corsHeaders })

@@ -787,13 +787,6 @@ export function AdminPanelScreen() {
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Roadmap Admin</h1>
               <p className="mt-1 text-sm text-slate-400">Zarządzaj projektami i etapami roadmapy</p>
             </div>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="hidden rounded-xl border border-slate-700/30 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06] lg:inline-flex"
-            >
-              Wyloguj
-            </button>
           </div>
 
           {/* Tabs */}
@@ -879,48 +872,73 @@ export function AdminPanelScreen() {
 
       {showNewProjectForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-          <div className="w-full max-w-md rounded-[28px] border border-[#1b2330] bg-gradient-to-b from-[#101620] to-[#0b1118] p-7 shadow-2xl shadow-black/60">
-            <h2 className="text-2xl font-semibold text-white">{projectFormMode === 'edit' ? 'Edytuj projekt' : 'Nowy projekt'}</h2>
-            <form onSubmit={handleProjectFormSubmit} className="mt-6 space-y-4">
+          <div className="w-full max-w-md rounded-[28px] border border-slate-700/30 bg-gradient-to-b from-[#101620] to-[#0b1118] p-8 shadow-2xl shadow-black/60">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold tracking-tight text-white">{projectFormMode === 'edit' ? 'Edytuj projekt' : 'Nowy projekt'}</h2>
+              <p className="mt-1 text-sm text-slate-400">
+                {projectFormMode === 'edit' ? 'Zaktualizuj szczegóły projektu' : 'Utwórz nowy projekt w roadmapie'}
+              </p>
+            </div>
+
+            <form onSubmit={handleProjectFormSubmit} className="space-y-5">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white">Nazwa projektu</label>
+                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Nazwa projektu
+                </label>
                 <input
                   type="text"
                   value={newProjectData.name}
                   onChange={(e) => setNewProjectData({ ...newProjectData, name: e.target.value })}
-                  className="w-full rounded-xl border border-[#1b2330] bg-[#0f141b] px-4 py-2.5 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
+                  placeholder="np. Aplikacja mobilna"
+                  className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
                   required
                 />
               </div>
+
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white">Opis</label>
+                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Opis
+                </label>
                 <textarea
                   value={newProjectData.description}
                   onChange={(e) => setNewProjectData({ ...newProjectData, description: e.target.value })}
-                  className="w-full resize-none rounded-xl border border-[#1b2330] bg-[#0f141b] px-4 py-2.5 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
+                  placeholder="Opisz cel i zakres tego projektu..."
+                  className="w-full resize-none rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
                   rows={3}
                 />
               </div>
+
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white">Ikona / emoji</label>
-                <input
-                  type="text"
-                  value={newProjectData.icon}
-                  onChange={(e) => setNewProjectData({ ...newProjectData, icon: e.target.value })}
-                  placeholder="np. 🚀, ⚙️, 📱, ☁️"
-                  className="w-full rounded-xl border border-[#1b2330] bg-[#0f141b] px-4 py-2.5 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
-                  maxLength={12}
-                />
-                <div className="mt-2.5 flex items-center gap-2 text-xs text-slate-400">
-                  <span>Podgląd:</span>
-                  <span className="grid h-8 w-8 place-items-center rounded-lg border border-[#1b2330] bg-white/[0.02] text-base">{renderProjectIcon(normalizeProjectIconInput(newProjectData.icon))}</span>
+                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Ikona / emoji
+                </label>
+                <div className="flex gap-2.5">
+                  <input
+                    type="text"
+                    value={newProjectData.icon}
+                    onChange={(e) => setNewProjectData({ ...newProjectData, icon: e.target.value })}
+                    placeholder="np. 🚀, ⚙️, 📱, ☁️"
+                    className="flex-1 rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                    maxLength={12}
+                  />
+                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-slate-700/30 bg-white/[0.03] text-lg">
+                    {renderProjectIcon(normalizeProjectIconInput(newProjectData.icon))}
+                  </div>
                 </div>
               </div>
-              <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 rounded-xl bg-violet-500 px-4 py-2.5 font-semibold text-white transition hover:bg-violet-600">
-                  {projectFormMode === 'edit' ? 'Zapisz zmiany' : 'Utwórz'}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
+                >
+                  {projectFormMode === 'edit' ? 'Zapisz zmiany' : 'Utwórz projekt'}
                 </button>
-                <button type="button" onClick={closeProjectForm} className="flex-1 rounded-xl border border-[#1b2330] px-4 py-2.5 text-white transition hover:bg-white/5">
+                <button
+                  type="button"
+                  onClick={closeProjectForm}
+                  className="flex-1 rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]"
+                >
                   Anuluj
                 </button>
               </div>
@@ -931,36 +949,49 @@ export function AdminPanelScreen() {
 
       {showNewStageForm && selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-          <div className="w-full max-w-lg rounded-[28px] border border-[#1b2330] bg-gradient-to-b from-[#101620] to-[#0b1118] p-7 shadow-2xl shadow-black/60">
-            <h2 className="text-2xl font-semibold text-white">{stageFormMode === 'edit' ? 'Edytuj etap' : 'Nowy etap'}</h2>
-            <p className="mt-2 text-sm text-slate-400">Projekt: {selectedProject.name}</p>
-            <form onSubmit={handleStageFormSubmit} className="mt-6 space-y-4">
+          <div className="w-full max-w-lg rounded-[28px] border border-slate-700/30 bg-gradient-to-b from-[#101620] to-[#0b1118] p-8 shadow-2xl shadow-black/60">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold tracking-tight text-white">{stageFormMode === 'edit' ? 'Edytuj etap' : 'Nowy etap'}</h2>
+              <p className="mt-1 text-sm text-slate-400">Projekt: <span className="font-medium text-violet-300">{selectedProject.name}</span></p>
+            </div>
+
+            <form onSubmit={handleStageFormSubmit} className="space-y-5">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white">Nazwa etapu</label>
+                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Nazwa etapu
+                </label>
                 <input
                   type="text"
                   value={newStageData.name}
                   onChange={(e) => setNewStageData({ ...newStageData, name: e.target.value })}
-                  className="w-full rounded-xl border border-[#1b2330] bg-[#0f141b] px-4 py-2.5 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
+                  placeholder="np. Implementacja"
+                  className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
                   required
                 />
               </div>
+
               <div>
-                <label className="mb-2 block text-sm font-semibold text-white">Opis</label>
+                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Opis
+                </label>
                 <textarea
                   value={newStageData.description}
                   onChange={(e) => setNewStageData({ ...newStageData, description: e.target.value })}
-                  className="w-full resize-none rounded-xl border border-[#1b2330] bg-[#0f141b] px-4 py-2.5 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
+                  placeholder="Opisz co zostanie wykonane w tym etapie..."
+                  className="w-full resize-none rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
                   rows={3}
                 />
               </div>
+
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-white">Status</label>
+                  <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                    <span className="text-violet-300">●</span> Status
+                  </label>
                   <select
                     value={newStageData.status}
                     onChange={(e) => setNewStageData({ ...newStageData, status: e.target.value as typeof newStageData.status })}
-                    className="w-full rounded-xl border border-[#1b2330] bg-[#0f141b] px-4 py-2.5 text-white outline-none focus:border-violet-400"
+                    className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
                   >
                     <option value="pending">Oczekujące</option>
                     <option value="in-progress">W trakcie</option>
@@ -968,23 +999,34 @@ export function AdminPanelScreen() {
                     <option value="blocked">Zablokowane</option>
                   </select>
                 </div>
+
                 <div>
-                  <label className="mb-2 block text-sm font-semibold text-white">Ikona / skrót</label>
+                  <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                    <span className="text-violet-300">●</span> Ikona / skrót
+                  </label>
                   <input
                     type="text"
                     value={newStageData.icon}
                     onChange={(e) => setNewStageData({ ...newStageData, icon: e.target.value })}
                     placeholder="check, dot, 1, 2"
-                    className="w-full rounded-xl border border-[#1b2330] bg-[#0f141b] px-4 py-2.5 text-white outline-none placeholder:text-slate-500 focus:border-violet-400"
+                    className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
                     maxLength={12}
                   />
                 </div>
               </div>
-              <div className="flex gap-3 pt-4">
-                <button type="submit" className="flex-1 rounded-xl bg-violet-500 px-4 py-2.5 font-semibold text-white transition hover:bg-violet-600">
-                  {stageFormMode === 'edit' ? 'Zapisz zmiany' : 'Zapisz'}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
+                >
+                  {stageFormMode === 'edit' ? 'Zapisz zmiany' : 'Utwórz etap'}
                 </button>
-                <button type="button" onClick={closeStageForm} className="flex-1 rounded-xl border border-[#1b2330] px-4 py-2.5 text-white transition hover:bg-white/5">
+                <button
+                  type="button"
+                  onClick={closeStageForm}
+                  className="flex-1 rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]"
+                >
                   Anuluj
                 </button>
               </div>
