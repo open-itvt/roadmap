@@ -1,4 +1,4 @@
-import redis from '../upstashClient'
+import redis from '../_upstashClient'
 import { handleCors } from '../_cors'
 
 export default async function handler(req: any, res: any) {
