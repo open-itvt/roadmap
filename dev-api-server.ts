@@ -1,6 +1,10 @@
+import dotenv from 'dotenv'
 import http from 'http'
 import { fileURLToPath } from 'url'
 import path from 'path'
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') })
+dotenv.config({ path: path.resolve(process.cwd(), '.env') })
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -55,6 +59,12 @@ function parseBody(req: http.IncomingMessage): Promise<Record<string, any>> {
   })
 }
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+}
+
 // Create server
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '', `http://${req.headers.host}`)
@@ -62,10 +72,16 @@ const server = http.createServer(async (req, res) => {
 
   console.log(`${req.method} ${pathname}`)
 
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204, corsHeaders)
+    res.end()
+    return
+  }
+
   const handlerPath = routeMap[pathname]
 
   if (!handlerPath) {
-    res.writeHead(404, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+    res.writeHead(404, { 'Content-Type': 'application/json', ...corsHeaders })
     res.end(JSON.stringify({ error: 'Not found', success: false }))
     return
   }
@@ -74,7 +90,7 @@ const server = http.createServer(async (req, res) => {
     const handler = await getHandler(handlerPath)
 
     if (!handler) {
-      res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+      res.writeHead(500, { 'Content-Type': 'application/json', ...corsHeaders })
       res.end(JSON.stringify({ error: 'Handler not found', success: false }))
       return
     }
@@ -85,11 +101,34 @@ const server = http.createServer(async (req, res) => {
       ;(req as any).body = body
     }
 
+    // Wrap response for Express-like handlers
+    const wrappedRes = Object.create(res)
+    wrappedRes.status = function (code: number) {
+      this.statusCode = code
+      return this
+    }
+    wrappedRes.json = function (body: any) {
+      if (!this.getHeader('Content-Type')) {
+        this.setHeader('Content-Type', 'application/json')
+      }
+      this.end(JSON.stringify(body))
+      return this
+    }
+    wrappedRes.send = function (body: any) {
+      if (!this.getHeader('Content-Type')) {
+        const isJson = typeof body === 'object'
+        this.setHeader('Content-Type', isJson ? 'application/json' : 'text/plain')
+      }
+      this.end(typeof body === 'string' ? body : JSON.stringify(body))
+      return this
+    }
+    wrappedRes.end = res.end.bind(res)
+
     // Call handler
-    await handler(req, res)
+    await handler(req, wrappedRes)
   } catch (error: any) {
     console.error('Handler error:', error)
-    res.writeHead(500, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+    res.writeHead(500, { 'Content-Type': 'application/json', ...corsHeaders })
     res.end(JSON.stringify({ error: error.message || 'Internal server error', success: false }))
   }
 })

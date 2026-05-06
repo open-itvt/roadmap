@@ -24,50 +24,12 @@ export default defineConfig({
     },
   },
   server: {
-    middlewareMode: false,
-    middleware: [
-      (req, res, next) => {
-        // Mock API responses for /api routes
-        if (!req.url?.startsWith('/api')) {
-          next()
-          return
-        }
-
-        res.setHeader('Content-Type', 'application/json')
-        res.setHeader('Access-Control-Allow-Origin', '*')
-        res.setHeader('Access-Control-Allow-Credentials', 'true')
-        res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS')
-        res.setHeader('Access-Control-Allow-Headers', 'Content-Type,Authorization')
-
-        if (req.method === 'OPTIONS') {
-          res.statusCode = 204
-          res.end()
-          return
-        }
-
-        // Mock responses
-        const mockResponses: Record<string, any> = {
-          '/api/auth/me': {
-            success: true,
-            data: {
-              isAuthenticated: false,
-              isSetupComplete: false,
-              adminExists: false,
-            },
-          },
-        }
-
-        const response = mockResponses[req.url!]
-        if (response) {
-          res.statusCode = 200
-          res.end(JSON.stringify(response))
-          return
-        }
-
-        // Default 404
-        res.statusCode = 404
-        res.end(JSON.stringify({ error: 'Not found' }))
+    proxy: {
+      '/api': {
+        target: 'http://localhost:3001',
+        changeOrigin: true,
+        secure: false,
       },
-    ],
+    },
   },
 })
