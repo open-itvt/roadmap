@@ -1,4 +1,4 @@
-import { getProjectById, updateProject, deleteProject } from '../../projects/_shared'
+import { getProjectById, updateProject, deleteProject } from './_shared'
 
 export default async function handler(req, res) {
   const { id } = req.query
@@ -10,21 +10,21 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const project = await getProjectById(String(id))
+      const project = await getProjectById(String(id), req.headers.authorization as string | undefined)
       if (!project) {
         res.status(404).json({ error: 'Project not found' })
         return
       }
       res.status(200).json({ success: true, data: project })
     } else if (req.method === 'PUT') {
-      const updated = await updateProject(String(id), req.body)
+      const updated = await updateProject(String(id), req.body, req.headers.authorization as string | undefined)
       if (!updated) {
         res.status(404).json({ error: 'Project not found' })
         return
       }
       res.status(200).json({ success: true, data: updated })
     } else if (req.method === 'DELETE') {
-      const deleted = await deleteProject(String(id))
+      const deleted = await deleteProject(String(id), req.headers.authorization as string | undefined)
       if (!deleted) {
         res.status(404).json({ error: 'Project not found' })
         return

@@ -1,5 +1,9 @@
-import { getProjectsFromRedis, saveProjectsToRedis, getStagesFromRedis, saveStagestoRedis } from '../../projects/_shared'
+import { getProjectsFromRedis, saveProjectsToRedis, saveStagestoRedis } from './projects/_shared'
 import type { Project, Stage } from '@/types'
+
+function getAuthHeader(req: any): string | undefined {
+  return req.headers.authorization as string | undefined
+}
 
 const SAMPLE_PROJECT: Project = {
   id: 'mobile-app-1',
@@ -92,15 +96,16 @@ export default async function handler(req, res) {
 
   try {
     // Check if data already exists
-    const existingProjects = await getProjectsFromRedis()
+    const authHeader = getAuthHeader(req)
+    const existingProjects = await getProjectsFromRedis(authHeader)
     if (existingProjects.length > 0) {
       res.status(200).json({ success: true, message: 'Data already initialized' })
       return
     }
 
     // Initialize with sample data
-    await saveProjectsToRedis([SAMPLE_PROJECT])
-    await saveStagestoRedis(SAMPLE_STAGES)
+    await saveProjectsToRedis([SAMPLE_PROJECT], authHeader)
+    await saveStagestoRedis(SAMPLE_STAGES, authHeader)
 
     res.status(200).json({ 
       success: true, 

@@ -1,5 +1,4 @@
-import { getStagesByProjectId, createStage, reorderStages } from '../../../projects/_shared'
-import { getProjectById } from '../../../projects/_shared'
+import { getStagesByProjectId, createStage, reorderStages, getProjectById } from '../_shared'
 
 export default async function handler(req, res) {
   const { projectId } = req.query
@@ -11,18 +10,19 @@ export default async function handler(req, res) {
 
   try {
     // Check if project exists
-    const project = await getProjectById(String(projectId))
+    const authHeader = req.headers.authorization as string | undefined
+    const project = await getProjectById(String(projectId), authHeader)
     if (!project) {
       res.status(404).json({ error: 'Project not found' })
       return
     }
 
     if (req.method === 'GET') {
-      const stages = await getStagesByProjectId(String(projectId))
+      const stages = await getStagesByProjectId(String(projectId), authHeader)
       res.status(200).json({ success: true, data: stages })
     } else if (req.method === 'POST' && req.body && req.body.stageIds) {
       // Reorder stages
-      const reordered = await reorderStages(String(projectId), req.body.stageIds)
+      const reordered = await reorderStages(String(projectId), req.body.stageIds, authHeader)
       res.status(200).json({ success: true, data: reordered })
     } else if (req.method === 'POST') {
       const { name, description, icon, status, order } = req.body
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
         return
       }
 
-      const stages = await getStagesByProjectId(String(projectId))
+      const stages = await getStagesByProjectId(String(projectId), authHeader)
       const newOrder = typeof order === 'number' ? order : stages.length + 1
 
       const newStage = await createStage(String(projectId), {
@@ -40,7 +40,7 @@ export default async function handler(req, res) {
         icon: icon || '◻',
         status: status || 'pending',
         order: newOrder,
-      })
+      }, authHeader)
       res.status(201).json({ success: true, data: newStage })
     } else {
       res.status(405).json({ error: 'Method not allowed' })

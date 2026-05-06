@@ -1,6 +1,6 @@
 import { verifyAuthenticationResponse } from '@simplewebauthn/server'
 import redis from '../../../../upstashClient'
-import { getAllAdmins, getWebAuthnOrigin, getWebAuthnRpID, issueSession, saveAdmin } from '../../../auth/_shared'
+import { getAllAdmins, getWebAuthnOrigin, getWebAuthnRpID, issueSession, saveAdmin, parseRedisValue } from '../../../auth/_shared'
 import { handleCors } from '../../../../_cors'
 
 export default async function handler(req, res) {
@@ -24,7 +24,11 @@ export default async function handler(req, res) {
       return
     }
 
-    const pending = JSON.parse(String(raw)) as { options: any; createdAt: number }
+    const pending = parseRedisValue<{ options: any; createdAt: number }>(raw)
+    if (!pending) {
+      res.status(500).json({ error: 'Invalid authentication session payload' })
+      return
+    }
     const admins = await getAllAdmins()
 
     const credentialId = response?.id || response?.rawId

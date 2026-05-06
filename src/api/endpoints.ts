@@ -1,5 +1,5 @@
 import apiClient from './client'
-import type { ApiResponse, Project, Stage, ProjectCreatePayload, StageCreatePayload } from '@/types'
+import type { ApiResponse, Project, Stage, ProjectCreatePayload, StageCreatePayload, Link } from '@/types'
 
 // Projects API
 export const projectsApi = {
@@ -52,5 +52,33 @@ export const stagesApi = {
   reorder: async (projectId: string, stageIds: string[]): Promise<Stage[]> => {
     const { data } = await apiClient.post<ApiResponse<Stage[]>>(`/api/projects/${projectId}/stages/reorder`, { stageIds })
     return data.data!
+  },
+}
+
+export const initApi = {
+  initialize: async (): Promise<void> => {
+    await apiClient.post('/api/init', {})
+  },
+}
+
+// Links API
+export const linksApi = {
+  getByStageId: async (projectId: string, stageId: string): Promise<Link[]> => {
+    const { data } = await apiClient.get<ApiResponse<Link[]>>(`/api/projects/${projectId}/stages/${stageId}/links`)
+    return data.data || []
+  },
+
+  create: async (projectId: string, stageId: string, link: Omit<Link, 'id' | 'stageId' | 'createdAt' | 'updatedAt'>): Promise<Link> => {
+    const { data } = await apiClient.post<ApiResponse<Link>>(`/api/projects/${projectId}/stages/${stageId}/links`, link)
+    return data.data!
+  },
+
+  update: async (projectId: string, stageId: string, linkId: string, link: Partial<Link>): Promise<Link> => {
+    const { data } = await apiClient.put<ApiResponse<Link>>(`/api/projects/${projectId}/stages/${stageId}/links/${linkId}`, link)
+    return data.data!
+  },
+
+  delete: async (projectId: string, stageId: string, linkId: string): Promise<void> => {
+    await apiClient.delete(`/api/projects/${projectId}/stages/${stageId}/links/${linkId}`)
   },
 }

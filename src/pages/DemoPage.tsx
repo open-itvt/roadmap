@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import { authApi } from '@/api/auth'
+import { initApi } from '@/api/endpoints'
 import { PublicView } from '@/pages/PublicView'
 
 const DEV_BYPASS_USERNAME = 'admin'
@@ -21,6 +22,7 @@ export function DemoPage() {
       try {
         const response = await authApi.bypassTmp(DEV_BYPASS_USERNAME, DEV_BYPASS_PASSWORD)
         localStorage.setItem('sessionToken', response.sessionToken)
+        await initApi.initialize()
         await checkAuth()
         setReady(true)
       } catch (error) {

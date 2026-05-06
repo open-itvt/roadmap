@@ -5,6 +5,7 @@ export interface Project {
   name: string
   description: string
   icon: string
+  privateNotes?: string
   status: 'active' | 'completed' | 'archived'
   priority: 'high' | 'medium' | 'low'
   progress: number
@@ -13,6 +14,16 @@ export interface Project {
   teamSize: number
   technologies: string[]
   goals: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Link {
+  id: string
+  url: string
+  title: string
+  description?: string
+  type: 'github' | 'demo' | 'docs' | 'other'
   createdAt: string
   updatedAt: string
 }
@@ -26,6 +37,7 @@ export interface Stage {
   icon: string
   order: number
   progress?: number
+  links?: Link[]
   createdAt: string
   updatedAt: string
 }

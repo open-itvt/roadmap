@@ -23,6 +23,7 @@ const routeMap = {
   '/api/auth/webauthn/register/start': 'api/auth/webauthn/register/start.ts',
   '/api/auth/webauthn/register/complete': 'api/auth/webauthn/register/complete.ts',
   '/api/admin/reset': 'api/admin/reset.ts',
+  '/api/init': 'api/init.ts',
   '/api/projects': 'api/projects.ts',
 }
 
@@ -46,6 +47,8 @@ const server = http.createServer(async (req, res) => {
   // Log request
   console.log(`${req.method} ${pathname}`)
 
+  req.query = { ...(parsedUrl.query || {}) }
+
   // Find matching handler
   const handler = handlers[pathname]
 
@@ -53,6 +56,20 @@ const server = http.createServer(async (req, res) => {
     res.writeHead(404, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({ error: 'Not found' }))
     return
+  }
+
+  const parts = pathname.split('/').filter(Boolean)
+  if (parts[0] === 'api' && parts[1] === 'projects') {
+    if (parts.length === 3) {
+      req.query.id = parts[2]
+    }
+
+    if (parts.length >= 4 && parts[3] === 'stages') {
+      req.query.projectId = parts[2]
+      if (parts.length === 5) {
+        req.query.stageId = parts[4]
+      }
+    }
   }
 
   // Parse body for POST/PUT/PATCH

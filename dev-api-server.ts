@@ -40,6 +40,7 @@ const routeMap: Record<string, string> = {
   '/api/auth/webauthn/register/start': './api/auth/webauthn/register/start.ts',
   '/api/auth/webauthn/register/complete': './api/auth/webauthn/register/complete.ts',
   '/api/admin/reset': './api/admin/reset.ts',
+  '/api/init': './api/init.ts',
   '/api/projects': './api/projects.ts',
 }
 
@@ -107,6 +108,22 @@ const server = http.createServer(async (req, res) => {
     res.end(JSON.stringify({ error: 'Not found', success: false }))
     return
   }
+
+  const parts = pathname.split('/').filter(Boolean)
+  const query = (req as any).query || {}
+  if (parts[0] === 'api' && parts[1] === 'projects') {
+    if (parts.length === 3) {
+      query.id = parts[2]
+    }
+
+    if (parts.length >= 4 && parts[3] === 'stages') {
+      query.projectId = parts[2]
+      if (parts.length === 5) {
+        query.stageId = parts[4]
+      }
+    }
+  }
+  ;(req as any).query = query
 
   try {
     const handler = await getHandler(handlerPath)

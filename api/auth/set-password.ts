@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs'
 import redis from '../upstashClient'
+import { parseRedisValue } from './_shared'
 import { handleCors } from '../_cors'
 
 export default async function handler(req, res) {
@@ -24,7 +25,11 @@ export default async function handler(req, res) {
       return
     }
 
-    const payload = JSON.parse(raw)
+    const payload = parseRedisValue<any>(raw)
+    if (!payload) {
+      res.status(500).json({ error: 'Invalid session payload' })
+      return
+    }
     if (!payload.totpVerified) {
       res.status(400).json({ error: 'TOTP not verified yet' })
       return

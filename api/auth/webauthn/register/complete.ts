@@ -1,6 +1,6 @@
 import { verifyRegistrationResponse } from '@simplewebauthn/server'
 import redis from '../../../../upstashClient'
-import { getAdminByUsername, getWebAuthnOrigin, getWebAuthnRpID, saveAdmin } from '../../../auth/_shared'
+import { getAdminByUsername, getWebAuthnOrigin, getWebAuthnRpID, saveAdmin, parseRedisValue } from '../../../auth/_shared'
 import { handleCors } from '../../../../_cors'
 
 export default async function handler(req, res) {
@@ -24,7 +24,11 @@ export default async function handler(req, res) {
       return
     }
 
-    const pending = JSON.parse(String(raw)) as { username: string; options: any }
+    const pending = parseRedisValue<{ username: string; options: any }>(raw)
+    if (!pending) {
+      res.status(500).json({ error: 'Invalid registration session payload' })
+      return
+    }
     const verification = await verifyRegistrationResponse({
       response,
       expectedChallenge: pending.options.challenge,

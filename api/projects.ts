@@ -3,7 +3,7 @@ import { getProjectsFromRedis, createProject } from './projects/_shared'
 export default async function handler(req, res) {
   try {
     if (req.method === 'GET') {
-      const projects = await getProjectsFromRedis()
+      const projects = await getProjectsFromRedis(req.headers.authorization as string | undefined)
       res.status(200).json({ success: true, data: projects })
     } else if (req.method === 'POST') {
       const { name, description, icon, status, priority, teamSize, technologies, goals } = req.body
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
         teamSize: teamSize || 0,
         technologies: technologies || [],
         goals: goals || [],
-      })
+      }, req.headers.authorization as string | undefined)
       res.status(201).json({ success: true, data: newProject })
     } else {
       res.status(405).json({ error: 'Method not allowed' })

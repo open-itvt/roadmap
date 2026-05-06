@@ -28,6 +28,27 @@ export interface SessionRecord {
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7
 
+export function parseRedisValue<T>(value: unknown): T | null {
+  if (value == null) return null
+  if (typeof value === 'string') {
+    try {
+      return JSON.parse(value) as T
+    } catch {
+      return null
+    }
+  }
+
+  if (typeof value === 'object') {
+    return value as T
+  }
+
+  try {
+    return JSON.parse(String(value)) as T
+  } catch {
+    return null
+  }
+}
+
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET
   if (!secret) {
@@ -47,8 +68,7 @@ export function getWebAuthnRpID(): string {
 
 export async function getAdminByUsername(username: string): Promise<AdminRecord | null> {
   const raw = await redis.get(`admin:${username}`)
-  if (!raw) return null
-  return JSON.parse(String(raw)) as AdminRecord
+  return parseRedisValue<AdminRecord>(raw)
 }
 
 export async function getAllAdmins(): Promise<AdminRecord[]> {
@@ -57,8 +77,9 @@ export async function getAllAdmins(): Promise<AdminRecord[]> {
 
   for (const key of keys) {
     const raw = await redis.get(String(key))
-    if (raw) {
-      admins.push(JSON.parse(String(raw)) as AdminRecord)
+    const admin = parseRedisValue<AdminRecord>(raw)
+    if (admin) {
+      admins.push(admin)
     }
   }
 
@@ -122,7 +143,7 @@ export async function getSessionFromToken(token?: string): Promise<SessionRecord
     const raw = await redis.get(`session:${sessionId}`)
     if (!raw) return null
 
-    return JSON.parse(String(raw)) as SessionRecord
+    return parseRedisValue<SessionRecord>(raw)
   } catch {
     return null
   }

@@ -8,13 +8,13 @@ import {
   FaClock,
   FaUsers,
   FaBolt,
-  FaCode,
   FaBullseye,
   FaExternalLinkAlt,
   FaCheckCircle,
   FaCircle,
   FaExclamationTriangle,
 } from 'react-icons/fa'
+import { renderProjectIcon } from '@/utils/icons'
 import type { Project, Stage } from '@/types'
 import { projectsApi, stagesApi } from '@/api/endpoints'
 
@@ -203,7 +203,7 @@ export function PublicView() {
             }`}
           >
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-white/8 text-lg flex-shrink-0">
-              <FaCode className="text-lg" />
+              {renderProjectIcon(project.icon)}
             </span>
             <span className="truncate text-sm font-medium">{project.name}</span>
           </button>
@@ -310,7 +310,7 @@ export function PublicView() {
               <DetailsContent project={selectedProject} />
             )
           ) : (
-            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/6 bg-white/[0.03]">
+            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-800/80 bg-white/[0.03]">
               <p className="text-slate-400">Wybierz projekt z menu</p>
             </div>
           )}
@@ -363,7 +363,7 @@ function RoadmapContent({ project }: { project: Project }) {
 
   if (stages.length === 0) {
     return (
-      <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/6 bg-white/[0.03]">
+      <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-800/80 bg-white/[0.03]">
         <p className="text-slate-400">Brak etapów dla tego projektu</p>
       </div>
     )
@@ -407,6 +407,25 @@ function RoadmapContent({ project }: { project: Project }) {
                     <div className="flex-1">
                       <h3 className="text-lg font-semibold mb-1">{stage.name}</h3>
                       <p className="text-slate-400 text-sm mb-2">{stage.description}</p>
+                      {stage.links && stage.links.length > 0 && (
+                        <div className="mb-2">
+                          <div className="flex flex-wrap gap-2">
+                            {stage.links.map((link) => (
+                              <a
+                                key={link.id}
+                                href={link.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800/50 text-slate-300 text-xs font-medium hover:bg-slate-700/50 transition"
+                                title={link.description || link.title}
+                              >
+                                <FaExternalLinkAlt className="text-xs" />
+                                {link.title}
+                              </a>
+                            ))}
+                          </div>
+                        </div>
+                      )}
                     </div>
                     <div className="ml-4 text-right">
                       <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
@@ -525,7 +544,7 @@ function DetailsContent({ project }: { project: Project }) {
           <section className="rounded-3xl bg-[#0f141b] p-5 shadow-[0_0_0_1px_rgba(15,23,42,0.75)] lg:p-6">
             <div className="mb-4 flex items-center gap-3">
               <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
-                <FaCode />
+                {renderProjectIcon(project.icon)}
               </span>
               <div>
                 <div className="text-sm font-medium text-white">Technologie</div>

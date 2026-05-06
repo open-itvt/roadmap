@@ -1,57 +1,42 @@
 import { useEffect, useState } from 'react'
-import type { ReactNode } from 'react'
 import {
   FaBars,
-  FaCheckCircle,
   FaChevronDown,
   FaClone,
   FaCode,
-  FaClock,
   FaCogs,
-  FaDatabase,
   FaEdit,
-  FaFolderOpen,
   FaGlobe,
   FaInfoCircle,
   FaListUl,
-  FaLock,
-  FaMobileAlt,
-  FaPaintBrush,
   FaPlus,
-  FaRocket,
   FaTrashAlt,
-  FaCloud,
-  FaChartLine,
+  FaExternalLinkAlt,
+  FaStickyNote,
 } from 'react-icons/fa'
-import type { IconType } from 'react-icons'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { projectsApi, stagesApi } from '@/api/endpoints'
 import type { Project, Stage } from '@/types'
-
-const EMOJI_ICON_KEY_MAP: Record<string, string> = {
-  '🚀': 'rocket',
-  '⚙️': 'cogs',
-  '📱': 'mobile',
-  '☁️': 'cloud',
-  '🔒': 'lock',
-  '🗄️': 'database',
-  '📊': 'chart',
-  '🎨': 'design',
-  '🌍': 'globe',
-}
-
-const PROJECT_ICON_COMPONENTS: Record<string, IconType> = {
-  rocket: FaRocket,
-  cogs: FaCogs,
-  mobile: FaMobileAlt,
-  cloud: FaCloud,
-  lock: FaLock,
-  database: FaDatabase,
-  chart: FaChartLine,
-  design: FaPaintBrush,
-  globe: FaGlobe,
-}
+import { renderProjectIcon, renderStageIcon, normalizeProjectIconInput, PROJECT_ICON_COMPONENTS } from '@/utils/icons'
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import {
+  useSortable,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 
 const PROJECT_GRADIENTS = [
   'from-violet-500 to-indigo-500',
@@ -59,33 +44,6 @@ const PROJECT_GRADIENTS = [
   'from-emerald-500 to-emerald-700',
   'from-amber-500 to-orange-600',
 ]
-
-function normalizeProjectIconInput(value: string): string {
-  const trimmed = value.trim()
-  if (!trimmed) return ''
-  return EMOJI_ICON_KEY_MAP[trimmed] || trimmed
-}
-
-function renderProjectIcon(value: string): ReactNode {
-  const trimmed = value?.trim() || ''
-  if (!trimmed) return <FaFolderOpen />
-
-  const Icon = PROJECT_ICON_COMPONENTS[trimmed.toLowerCase()]
-  if (Icon) return <Icon />
-
-  return trimmed
-}
-
-function renderStageIcon(value: string): ReactNode {
-  const trimmed = value?.trim() || ''
-  if (!trimmed) return <FaCode />
-
-  if (trimmed === 'check') return <FaCheckCircle />
-  if (trimmed === 'dot') return <FaClock />
-  if (/^\d+$/.test(trimmed)) return trimmed
-
-  return trimmed.length <= 2 ? trimmed : <FaCode />
-}
 
 function formatDate(value: string): string {
   return new Date(value).toLocaleDateString('pl-PL')
@@ -118,6 +76,124 @@ function getStageStatusLabel(status: Stage['status']): string {
   }
 }
 
+interface SortableStageItemProps {
+  stage: Stage
+  index: number
+  selectedStage: Stage | null
+  editingStage: Stage | null
+  setSelectedStage: (stage: Stage) => void
+  setEditingStage: (stage: Stage | null) => void
+  handleDeleteStage: (id: string) => Promise<void>
+}
+
+function SortableStageItem({
+  stage,
+  index,
+  selectedStage,
+  editingStage,
+  setSelectedStage,
+  setEditingStage,
+  handleDeleteStage,
+}: SortableStageItemProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+  } = useSortable({ id: stage.id })
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={`rounded-2xl border-1 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)] transition cursor-pointer ${
+        editingStage?.id === stage.id
+          ? 'border-violet-400/45 bg-violet-500/15'
+          : selectedStage?.id === stage.id
+            ? 'border-blue-400/45 bg-blue-500/15'
+            : 'border-slate-800/80 bg-[#0f141b] hover:border-slate-700/80'
+      }`}
+      onClick={() => {
+        if (selectedStage?.id === stage.id) {
+          setEditingStage(stage)
+        } else {
+          setSelectedStage(stage)
+          setEditingStage(null)
+        }
+      }}
+    >
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0">
+          <span
+            className={`grid h-10 w-10 place-items-center rounded-full border text-sm font-semibold ${
+              stage.status === 'completed'
+                ? 'border-green-600/30 bg-green-900/30 text-green-200'
+                : stage.status === 'in-progress'
+                  ? 'border-amber-600/30 bg-amber-900/30 text-amber-200'
+                  : stage.status === 'blocked'
+                    ? 'border-orange-500/30 bg-orange-900/30 text-orange-200'
+                    : 'border-slate-700/30 bg-slate-800/30 text-slate-300'
+            }`}
+          >
+            NR{index + 1}
+          </span>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-sm font-semibold text-white">{stage.name}</h3>
+            <span
+              className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${
+                stage.status === 'completed'
+                  ? 'border-green-600/20 bg-green-900/30 text-green-200'
+                  : stage.status === 'in-progress'
+                    ? 'border-amber-600/20 bg-amber-900/30 text-amber-200'
+                    : stage.status === 'blocked'
+                      ? 'border-orange-500/20 bg-orange-900/30 text-orange-200'
+                      : 'border-slate-700/20 bg-slate-800/30 text-slate-300'
+              }`}
+            >
+              {getStageStatusLabel(stage.status)}
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mb-2">{stage.description}</p>
+          {stage.progress ? <div className="text-xs text-slate-500 mb-1">Postęp: {stage.progress}%</div> : null}
+          <div className="text-xs text-slate-500">{formatDate(stage.createdAt)}</div>
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button
+            type="button"
+            className="rounded-lg border border-slate-700/80 p-1.5 text-slate-300 transition hover:border-slate-600 hover:bg-white/[0.04]"
+            {...attributes}
+            {...listeners}
+            title="Przeciągnij, aby zmienić kolejność"
+          >
+            <FaListUl className="text-xs" />
+          </button>
+          <button
+            type="button"
+            className="rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10"
+            onClick={(e) => {
+              e.stopPropagation()
+              void handleDeleteStage(stage.id)
+            }}
+            title="Usuń etap"
+          >
+            <FaTrashAlt className="text-xs" />
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 interface ManagementTabContentProps {
   projects: Project[]
   stages: Stage[]
@@ -126,10 +202,16 @@ interface ManagementTabContentProps {
   resetProjectForm: (project?: Project) => void
   resetStageForm: (stage?: Stage) => void
   handleDuplicateProject: (project: Project) => Promise<void>
-  handleDuplicateStage: (stage: Stage) => Promise<void>
   handleDeleteProject: (id: string) => Promise<void>
   handleDeleteStage: (id: string) => Promise<void>
   selectedProjectStages: Stage[]
+  editingStage: Stage | null
+  setEditingStage: (stage: Stage | null) => void
+  handleSaveStageChanges: () => Promise<void>
+  sensors: any
+  handleDragEnd: (event: any) => void
+  selectedStage: Stage | null
+  setSelectedStage: (stage: Stage) => void
 }
 
 function ManagementTabContent({
@@ -140,10 +222,16 @@ function ManagementTabContent({
   resetProjectForm,
   resetStageForm,
   handleDuplicateProject,
-  handleDuplicateStage,
   handleDeleteProject,
   handleDeleteStage,
   selectedProjectStages,
+  editingStage,
+  setEditingStage,
+  handleSaveStageChanges,
+  sensors,
+  handleDragEnd,
+  selectedStage,
+  setSelectedStage,
 }: ManagementTabContentProps) {
   const stageCountByProject = (projectId: string) => stages.filter((s) => s.projectId === projectId).length
 
@@ -284,79 +372,139 @@ function ManagementTabContent({
             <p className="text-slate-400">Ten projekt nie ma jeszcze etapów</p>
           </div>
         ) : (
-          <div className="space-y-3">
-            {selectedProjectStages.map((stage) => (
-              <div
-                key={stage.id}
-                className="rounded-2xl border-1 border-slate-800/80 bg-[#0f141b] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)] transition hover:border-slate-700/80"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="flex-shrink-0">
-                    <span
-                      className={`grid h-10 w-10 place-items-center rounded-full border text-sm font-semibold ${
-                        stage.status === 'completed'
-                          ? 'border-green-600/30 bg-green-900/30 text-green-200'
-                          : stage.status === 'in-progress'
-                            ? 'border-amber-600/30 bg-amber-900/30 text-amber-200'
-                            : stage.status === 'blocked'
-                              ? 'border-orange-500/30 bg-orange-900/30 text-orange-200'
-                              : 'border-slate-700/30 bg-slate-800/30 text-slate-300'
-                      }`}
-                    >
-                      {renderStageIcon(stage.icon)}
-                    </span>
+          <div className="space-y-4">
+            {editingStage ? (
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FaEdit className="text-violet-300" />
+                    <span className="text-sm font-semibold text-slate-300">Edytuj etap</span>
+                  </div>
+                  <button onClick={() => setEditingStage(null)} className="text-slate-400 hover:text-slate-300">×</button>
+                </div>
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Nazwa etapu</label>
+                    <input
+                      type="text"
+                      value={editingStage.name}
+                      onChange={(e) => setEditingStage({ ...editingStage, name: e.target.value })}
+                      className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                    />
                   </div>
 
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="text-sm font-semibold text-white">{stage.name}</h3>
-                      <span
-                        className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${
-                          stage.status === 'completed'
-                            ? 'border-green-600/20 bg-green-900/30 text-green-200'
-                            : stage.status === 'in-progress'
-                              ? 'border-amber-600/20 bg-amber-900/30 text-amber-200'
-                              : stage.status === 'blocked'
-                                ? 'border-orange-500/20 bg-orange-900/30 text-orange-200'
-                                : 'border-slate-700/20 bg-slate-800/30 text-slate-300'
-                        }`}
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Opis</label>
+                    <textarea
+                      value={editingStage.description}
+                      onChange={(e) => setEditingStage({ ...editingStage, description: e.target.value })}
+                      className="w-full resize-none rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                      rows={2}
+                    />
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Status</label>
+                      <select
+                        value={editingStage.status}
+                        onChange={(e) => setEditingStage({ ...editingStage, status: e.target.value as Stage['status'] })}
+                        className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60"
                       >
-                        {getStageStatusLabel(stage.status)}
-                      </span>
+                        <option value="pending">Oczekujące</option>
+                        <option value="in-progress">W trakcie</option>
+                        <option value="completed">Zakończone</option>
+                        <option value="blocked">Zablokowane</option>
+                      </select>
                     </div>
-                    <p className="text-xs text-slate-400 mb-2">{stage.description}</p>
-                    <div className="text-xs text-slate-500">{formatDate(stage.createdAt)}</div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Postęp (%)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={editingStage.progress || 0}
+                        onChange={(e) => setEditingStage({ ...editingStage, progress: parseInt(e.target.value) || 0 })}
+                        className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Ikona / skrót</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['check', 'dot', '1', '2', '3', '4', '5'].map((option) => (
+                          <button
+                            key={option}
+                            type="button"
+                            onClick={() => setEditingStage({ ...editingStage, icon: option })}
+                            className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition ${
+                              editingStage.icon === option
+                                ? 'border-violet-400 bg-violet-500/20 text-violet-300'
+                                : 'border-slate-700/30 bg-white/[0.03] text-slate-400 hover:border-slate-700/50 hover:bg-white/[0.05] hover:text-slate-300'
+                            }`}
+                            title={option}
+                          >
+                            {renderStageIcon(option)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Kolejność</label>
+                      <input
+                        type="number"
+                        min="1"
+                        value={editingStage.order}
+                        onChange={(e) => setEditingStage({ ...editingStage, order: parseInt(e.target.value) || 1 })}
+                        className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                      />
+                    </div>
                   </div>
 
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <div className="flex gap-3 pt-4">
                     <button
-                      type="button"
-                      className="rounded-lg border border-slate-700/80 p-1.5 text-slate-300 transition hover:border-slate-600 hover:bg-white/[0.04]"
-                      onClick={() => resetStageForm(stage)}
-                      title="Edytuj etap"
+                      onClick={handleSaveStageChanges}
+                      className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
                     >
-                      <FaEdit className="text-xs" />
+                      Zapisz zmiany
                     </button>
                     <button
-                      type="button"
-                      className="rounded-lg border border-slate-700/80 p-1.5 text-slate-300 transition hover:border-slate-600 hover:bg-white/[0.04]"
-                      onClick={() => void handleDuplicateStage(stage)}
-                      title="Powiel etap"
+                      onClick={() => setEditingStage(null)}
+                      className="flex-1 rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]"
                     >
-                      <FaClone className="text-xs" />
-                    </button>
-                    <button
-                      type="button"
-                      className="rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10"
-                      onClick={() => void handleDeleteStage(stage.id)}
-                      title="Usuń etap"
-                    >
-                      <FaTrashAlt className="text-xs" />
+                      Anuluj
                     </button>
                   </div>
                 </div>
               </div>
-            ))}
+            ) : null}
+
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={handleDragEnd}
+            >
+              <SortableContext
+                items={selectedProjectStages.map(s => s.id)}
+                strategy={verticalListSortingStrategy}
+              >
+                {selectedProjectStages.map((stage, index) => (
+                  <SortableStageItem
+                    key={stage.id}
+                    stage={stage}
+                    index={index}
+                    selectedStage={selectedStage}
+                    editingStage={editingStage}
+                    setSelectedStage={setSelectedStage}
+                    setEditingStage={setEditingStage}
+                    handleDeleteStage={handleDeleteStage}
+                  />
+                ))}
+              </SortableContext>
+            </DndContext>
           </div>
         )}
       </section>
@@ -383,6 +531,7 @@ export function AdminPanelScreen() {
     name: '',
     description: '',
     icon: 'rocket',
+    privateNotes: '',
     priority: 'medium' as Project['priority'],
     progress: 0,
     startDate: new Date().toISOString().split('T')[0],
@@ -399,7 +548,52 @@ export function AdminPanelScreen() {
     icon: '',
   })
   const [editingProject, setEditingProject] = useState<Project | null>(null)
-  const [activeTab, setActiveTab] = useState<'management' | 'details' | 'links' | 'settings' | 'demo'>('management')
+  const [editingStage, setEditingStage] = useState<Stage | null>(null)
+  const [selectedStage, setSelectedStage] = useState<Stage | null>(null)
+  const [activeTab, setActiveTab] = useState<'management' | 'details' | 'links' | 'settings' | 'notes' | 'demo'>(
+    (typeof window !== 'undefined' && localStorage.getItem('roadmap-admin-active-tab')) as 'management' | 'details' | 'links' | 'settings' | 'notes' | 'demo' || 'management'
+  )
+
+  const handleTabChange = (tab: 'management' | 'details' | 'links' | 'settings' | 'notes' | 'demo') => {
+    setActiveTab(tab)
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('roadmap-admin-active-tab', tab)
+    }
+    setIsMobileMenuOpen(false)
+  }
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  )
+
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event
+
+    if (active.id !== over.id) {
+      const oldIndex = selectedProjectStages.findIndex((stage) => stage.id === active.id)
+      const newIndex = selectedProjectStages.findIndex((stage) => stage.id === over.id)
+
+      const reorderedStages = arrayMove(selectedProjectStages, oldIndex, newIndex)
+
+      // Update order in database
+      const updatedStages = reorderedStages.map((stage, index) => ({
+        ...stage,
+        order: index + 1,
+      }))
+
+      setStages(updatedStages)
+
+      // Save to backend
+      void Promise.all(
+        updatedStages.map((stage) =>
+          stagesApi.update(selectedProject!.id, stage.id, { order: stage.order })
+        )
+      )
+    }
+  }
 
   useEffect(() => {
     void loadProjects()
@@ -448,6 +642,7 @@ export function AdminPanelScreen() {
         name: project.name,
         description: project.description,
         icon: project.icon,
+          privateNotes: project.privateNotes || '',
         priority: project.priority,
         progress: project.progress,
         startDate: project.startDate,
@@ -463,7 +658,8 @@ export function AdminPanelScreen() {
       setNewProjectData({
         name: '',
         description: '',
-        icon: '',
+          icon: 'rocket',
+          privateNotes: '',
         priority: 'medium' as Project['priority'],
         progress: 0,
         startDate: new Date().toISOString().split('T')[0],
@@ -564,6 +760,7 @@ export function AdminPanelScreen() {
         name: `${project.name} (kopia)`,
         description: project.description,
         icon: project.icon,
+          privateNotes: '',
         status: project.status,
         priority: project.priority,
         progress: project.progress,
@@ -576,22 +773,6 @@ export function AdminPanelScreen() {
       setProjects([...projects, duplicatedProject])
     } catch (error) {
       console.error('Failed to duplicate project:', error)
-    }
-  }
-
-  const handleDuplicateStage = async (stage: Stage) => {
-    if (!selectedProject) return
-    try {
-      const duplicatedStage = await stagesApi.create(selectedProject.id, {
-        name: `${stage.name} (kopia)`,
-        description: stage.description,
-        status: stage.status,
-        icon: stage.icon,
-        order: stages.length,
-      })
-      setStages([...stages, duplicatedStage])
-    } catch (error) {
-      console.error('Failed to duplicate stage:', error)
     }
   }
 
@@ -631,6 +812,17 @@ export function AdminPanelScreen() {
     }
   }
 
+  const handleSaveStageChanges = async () => {
+    if (!editingStage || !selectedProject) return
+    try {
+      const updated = await stagesApi.update(selectedProject.id, editingStage.id, editingStage)
+      setStages(stages.map((s) => (s.id === updated.id ? updated : s)))
+      setEditingStage(null)
+    } catch (error) {
+      console.error('Failed to save stage:', error)
+    }
+  }
+
   const selectedProjectStages = selectedProject ? stages.filter((stage) => stage.projectId === selectedProject.id) : []
 
   const sidebarContent = (
@@ -652,7 +844,12 @@ export function AdminPanelScreen() {
         <div className="space-y-1.5">
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/18 px-3 py-2.5 text-left text-sm font-medium text-white shadow-[0_0_0_1px_rgba(139,92,246,0.15)]"
+            onClick={() => handleTabChange('management')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'management'
+                ? 'border border-violet-400/30 bg-violet-500/18 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.15)]'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
+            }`}
           >
             <FaListUl className="text-violet-200" />
             Projekty
@@ -662,7 +859,7 @@ export function AdminPanelScreen() {
             className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5"
           >
             <FaGlobe className="text-slate-400" />
-            Podgląd publiczny
+            Podgląd (publiczny)
             <span className="ml-auto text-slate-500">↗</span>
           </a>
         </div>
@@ -674,6 +871,7 @@ export function AdminPanelScreen() {
       <div className="px-3">
         <button
           type="button"
+          onClick={() => setSelectedProject(selectedProject)}
           className="flex w-full items-center gap-3 rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 py-2.5 text-left transition hover:border-slate-700/40 hover:bg-white/[0.05]"
         >
           <span className={`grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br ${PROJECT_GRADIENTS[0]} text-white shadow-lg shadow-violet-500/20`}>
@@ -690,37 +888,80 @@ export function AdminPanelScreen() {
         <div className="space-y-1.5">
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-xl border border-violet-400/30 bg-violet-500/15 px-3 py-2.5 text-left text-sm font-medium text-white"
+            onClick={() => handleTabChange('management')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'management'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
+            }`}
           >
             <FaListUl className="text-violet-200" />
             Etapy
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5"
+            onClick={() => handleTabChange('details')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'details'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
+            }`}
           >
             <FaInfoCircle className="text-slate-400" />
             Szczegóły projektu
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5"
+            onClick={() => handleTabChange('links')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'links'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
+            }`}
           >
             <FaCode className="text-slate-400" />
             Linki (GitHub)
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5"
+            onClick={() => handleTabChange('settings')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'settings'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
+            }`}
           >
             <FaCogs className="text-slate-400" />
             Ustawienia
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('notes')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'notes'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
+            }`}
+          >
+            <FaStickyNote className="text-slate-400" />
+            Prywatne notatki
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('demo')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'demo'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
+            }`}
+          >
+            <FaExternalLinkAlt className="text-slate-400" />
+            Demo
           </button>
         </div>
       </div>
         </>
       )}
-
       <div className="mt-auto border-t border-slate-700/30 p-4">
         <button
           type="button"
@@ -794,60 +1035,6 @@ export function AdminPanelScreen() {
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="mb-4 sm:mb-6 flex items-center gap-4 sm:gap-6 border-b border-slate-700/20 text-xs sm:text-sm overflow-x-auto">
-            <button
-              onClick={() => setActiveTab('management')}
-              className={`relative pb-3 font-medium transition whitespace-nowrap ${
-                activeTab === 'management'
-                  ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
-                  : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              Zarządzanie
-            </button>
-            <button
-              onClick={() => setActiveTab('details')}
-              className={`relative pb-3 font-medium transition whitespace-nowrap ${
-                activeTab === 'details'
-                  ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
-                  : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              Szczegóły projektu
-            </button>
-            <button
-              onClick={() => setActiveTab('links')}
-              className={`relative pb-3 font-medium transition whitespace-nowrap ${
-                activeTab === 'links'
-                  ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
-                  : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              Linki (GitHub)
-            </button>
-            <button
-              onClick={() => setActiveTab('settings')}
-              className={`relative pb-3 font-medium transition whitespace-nowrap ${
-                activeTab === 'settings'
-                  ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
-                  : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              Ustawienia
-            </button>
-            <button
-              onClick={() => setActiveTab('demo')}
-              className={`relative pb-3 font-medium transition whitespace-nowrap ${
-                activeTab === 'demo'
-                  ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
-                  : 'text-slate-400 hover:text-slate-300'
-              }`}
-            >
-              Demo
-            </button>
-          </div>
-
           {/* Tab content */}
           {activeTab === 'management' && (
             <ManagementTabContent
@@ -858,10 +1045,16 @@ export function AdminPanelScreen() {
               resetProjectForm={resetProjectForm}
               resetStageForm={resetStageForm}
               handleDuplicateProject={handleDuplicateProject}
-              handleDuplicateStage={handleDuplicateStage}
               handleDeleteProject={handleDeleteProject}
               handleDeleteStage={handleDeleteStage}
               selectedProjectStages={selectedProjectStages}
+              editingStage={editingStage}
+              setEditingStage={setEditingStage}
+              handleSaveStageChanges={handleSaveStageChanges}
+              sensors={sensors}
+              handleDragEnd={handleDragEnd}
+              selectedStage={selectedStage}
+              setSelectedStage={setSelectedStage}
             />
           )}
 
@@ -882,7 +1075,7 @@ export function AdminPanelScreen() {
                       type="text"
                       value={editingProject.name}
                       onChange={(e) => setEditingProject({ ...editingProject, name: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                      className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
                     />
                   </div>
 
@@ -891,7 +1084,7 @@ export function AdminPanelScreen() {
                     <textarea
                       value={editingProject.description}
                       onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
-                      className="w-full resize-none rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                      className="w-full resize-none rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
                       rows={3}
                     />
                   </div>
@@ -902,7 +1095,7 @@ export function AdminPanelScreen() {
                       <select
                         value={editingProject.status}
                         onChange={(e) => setEditingProject({ ...editingProject, status: e.target.value as Project['status'] })}
-                        className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60"
+                        className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-5 py-3 text-white outline-none transition focus:border-violet-400/60"
                       >
                         <option value="active">Aktywny</option>
                         <option value="completed">Ukończony</option>
@@ -915,7 +1108,7 @@ export function AdminPanelScreen() {
                       <select
                         value={editingProject.priority}
                         onChange={(e) => setEditingProject({ ...editingProject, priority: e.target.value as Project['priority'] })}
-                        className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60"
+                        className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60"
                       >
                         <option value="high">Wysoki</option>
                         <option value="medium">Średni</option>
@@ -931,7 +1124,7 @@ export function AdminPanelScreen() {
                         max="100"
                         value={editingProject.progress}
                         onChange={(e) => setEditingProject({ ...editingProject, progress: parseInt(e.target.value) || 0 })}
-                        className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                        className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
                       />
                     </div>
 
@@ -942,7 +1135,7 @@ export function AdminPanelScreen() {
                         min="0"
                         value={editingProject.teamSize}
                         onChange={(e) => setEditingProject({ ...editingProject, teamSize: parseInt(e.target.value) || 0 })}
-                        className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                        className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
                       />
                     </div>
 
@@ -952,7 +1145,7 @@ export function AdminPanelScreen() {
                         type="date"
                         value={editingProject.startDate}
                         onChange={(e) => setEditingProject({ ...editingProject, startDate: e.target.value })}
-                        className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                        className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
                       />
                     </div>
                   </div>
@@ -963,7 +1156,7 @@ export function AdminPanelScreen() {
                       value={editingProject.technologies.join(', ')}
                       onChange={(e) => setEditingProject({ ...editingProject, technologies: e.target.value.split(',').map((t) => t.trim()).filter((t) => t) })}
                       placeholder="React, TypeScript, Node.js"
-                      className="w-full resize-none rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                      className="w-full resize-none rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
                       rows={2}
                     />
                   </div>
@@ -974,7 +1167,7 @@ export function AdminPanelScreen() {
                       value={editingProject.goals.join('\n')}
                       onChange={(e) => setEditingProject({ ...editingProject, goals: e.target.value.split('\n').filter((g) => g.trim()) })}
                       placeholder="Cel 1&#10;Cel 2&#10;Cel 3"
-                      className="w-full resize-none rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                      className="w-full resize-none rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
                       rows={3}
                     />
                   </div>
@@ -1001,8 +1194,8 @@ export function AdminPanelScreen() {
           {activeTab === 'links' && (
             <div className="space-y-4">
               <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
-                <h3 className="text-lg font-semibold text-white mb-2">Linki projektu</h3>
-                <p className="text-sm text-slate-400 mb-6">Tutaj będą wyświetlane linki do repozytorium GitHub, website'u i innych zasobów projektu.</p>
+                <h3 className="text-lg font-semibold text-white mb-2">Linki etapów</h3>
+                <p className="text-sm text-slate-400 mb-6">Zarządzaj linkami GitHub, demo i innymi zasobami dla poszczególnych etapów.</p>
                 <div className="rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4 text-center">
                   <p className="text-sm text-slate-400">Funkcionalność wkrótce dostępna</p>
                 </div>
@@ -1029,7 +1222,7 @@ export function AdminPanelScreen() {
               <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
                 <h4 className="text-sm font-semibold text-slate-300 mb-3">Szybkie akcje</h4>
                 <div className="flex gap-2 flex-wrap">
-                  <button onClick={() => { setProjectFormMode('edit'); setProjectFormProjectId(selectedProject.id); setShowNewProjectForm(true) }} className="inline-flex items-center gap-2 rounded-xl bg-slate-700/30 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700/50">
+                  <button onClick={() => resetProjectForm(selectedProject)} className="inline-flex items-center gap-2 rounded-xl bg-slate-700/30 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700/50">
                     <FaEdit className="text-sm" />
                     <span>Edytuj projekt</span>
                   </button>
@@ -1037,6 +1230,42 @@ export function AdminPanelScreen() {
                     <FaClone className="text-sm" />
                     <span>Duplikuj</span>
                   </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'notes' && selectedProject && (
+            <div className="space-y-4 pb-10">
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <div className="mb-4 flex items-center gap-2">
+                  <FaStickyNote className="text-violet-300" />
+                  <h3 className="text-lg font-semibold text-white">Prywatne notatki</h3>
+                </div>
+                <p className="mb-6 text-sm text-slate-400">
+                  Notatki są widoczne tylko w panelu admina i nie pojawiają się na publicznej stronie roadmapy.
+                </p>
+                <div className="space-y-4">
+                  <textarea
+                    value={editingProject?.privateNotes || ''}
+                    onChange={(e) => setEditingProject((current) => (current ? { ...current, privateNotes: e.target.value } : current))}
+                    placeholder="Zapisz tu ważne informacje o projekcie, decyzje zespołu, ryzyka albo przypomnienia dla siebie..."
+                    className="min-h-48 w-full rounded-xl border border-slate-600/50 bg-gray-950 px-4 py-3 text-sm leading-6 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-gray-900"
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleSaveProjectChanges}
+                      className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
+                    >
+                      Zapisz notatki
+                    </button>
+                    <button
+                      onClick={() => setEditingProject(selectedProject)}
+                      className="rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-sm font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]"
+                    >
+                      Cofnij zmiany
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

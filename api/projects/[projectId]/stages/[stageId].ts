@@ -1,4 +1,4 @@
-import { getStageById, updateStage, deleteStage, getProjectById } from '../../../../projects/_shared'
+import { getStageById, updateStage, deleteStage, getProjectById } from '../../_shared'
 
 export default async function handler(req, res) {
   const { projectId, stageId } = req.query
@@ -10,40 +10,41 @@ export default async function handler(req, res) {
 
   try {
     // Check if project exists
-    const project = await getProjectById(String(projectId))
+    const authHeader = req.headers.authorization as string | undefined
+    const project = await getProjectById(String(projectId), authHeader)
     if (!project) {
       res.status(404).json({ error: 'Project not found' })
       return
     }
 
     if (req.method === 'GET') {
-      const stage = await getStageById(String(stageId))
+      const stage = await getStageById(String(stageId), authHeader)
       if (!stage || stage.projectId !== String(projectId)) {
         res.status(404).json({ error: 'Stage not found' })
         return
       }
       res.status(200).json({ success: true, data: stage })
     } else if (req.method === 'PUT') {
-      const stage = await getStageById(String(stageId))
+      const stage = await getStageById(String(stageId), authHeader)
       if (!stage || stage.projectId !== String(projectId)) {
         res.status(404).json({ error: 'Stage not found' })
         return
       }
 
-      const updated = await updateStage(String(stageId), req.body)
+      const updated = await updateStage(String(stageId), req.body, authHeader)
       if (!updated) {
         res.status(404).json({ error: 'Stage not found' })
         return
       }
       res.status(200).json({ success: true, data: updated })
     } else if (req.method === 'DELETE') {
-      const stage = await getStageById(String(stageId))
+      const stage = await getStageById(String(stageId), authHeader)
       if (!stage || stage.projectId !== String(projectId)) {
         res.status(404).json({ error: 'Stage not found' })
         return
       }
 
-      const deleted = await deleteStage(String(stageId))
+      const deleted = await deleteStage(String(stageId), authHeader)
       if (!deleted) {
         res.status(404).json({ error: 'Stage not found' })
         return
