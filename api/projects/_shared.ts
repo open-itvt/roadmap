@@ -84,7 +84,7 @@ export async function getStageById(id: string): Promise<Stage | null> {
   return stages.find(s => s.id === id) || null
 }
 
-export async function createStage(projectId: string, stage: Omit<Stage, 'id' | 'createdAt' | 'updatedAt'>): Promise<Stage> {
+export async function createStage(projectId: string, stage: Omit<Stage, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>): Promise<Stage> {
   const stages = await getStagesFromRedis()
   const now = new Date().toISOString()
   const newStage: Stage = {
