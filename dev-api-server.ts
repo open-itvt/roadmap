@@ -26,27 +26,11 @@ async function getHandler(handlerPath: string) {
   }
 }
 
-// Route mapping
-const routeMap: Record<string, string> = {
-  '/api/auth/me': './api/auth/me.ts',
-  '/api/auth/init': './api/auth/init.ts',
-  '/api/auth/login': './api/auth/login.ts',
-  '/api/auth/logout': './api/auth/logout.ts',
-  '/api/auth/verify-totp': './api/auth/verify-totp.ts',
-  '/api/auth/set-password': './api/auth/set-password.ts',
-  '/api/auth/webauthn/auth/start': './api/auth/webauthn/auth/start.ts',
-  '/api/auth/webauthn/auth/complete': './api/auth/webauthn/auth/complete.ts',
-  '/api/auth/webauthn/register/start': './api/auth/webauthn/register/start.ts',
-  '/api/auth/webauthn/register/complete': './api/auth/webauthn/register/complete.ts',
-  '/api/admin/reset': './api/admin/reset.ts',
-  '/api/projects': './api/projects.ts',
-}
-
-// Dynamic route patterns: [regex, handlerPath, paramNames]
-const dynamicRoutes: [RegExp, string, string[]][] = [
-  [/^\/api\/projects\/([^/]+)\/stages\/([^/]+)$/, './api/projects/[projectId]/stages/[stageId].ts', ['projectId', 'stageId']],
-  [/^\/api\/projects\/([^/]+)\/stages$/, './api/projects/[projectId]/stages.ts', ['projectId']],
-  [/^\/api\/projects\/([^/]+)$/, './api/projects/[projectId]/index.ts', ['projectId']],
+// Consolidated catch-all handler paths
+const CATCH_ALL_ROUTES: [RegExp, string, string][] = [
+  [/^\/api\/auth(\/.*)?$/, './api/auth/[...path].ts', '/api/auth'],
+  [/^\/api\/admin(\/.*)?$/, './api/admin/[[...path]].ts', '/api/admin'],
+  [/^\/api\/projects(\/.*)?$/, './api/projects/[[...path]].ts', '/api/projects'],
 ]
 
 // Parse JSON body
@@ -85,19 +69,15 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  let resolvedHandlerPath = routeMap[pathname]
-  let dynamicParams: Record<string, string> = {}
+  let resolvedHandlerPath: string | undefined
+  let pathSegments: string[] = []
 
-  if (!resolvedHandlerPath) {
-    for (const [pattern, dynPath, paramNames] of dynamicRoutes) {
-      const match = pathname.match(pattern)
-      if (match) {
-        resolvedHandlerPath = dynPath
-        paramNames.forEach((name, i) => {
-          dynamicParams[name] = match[i + 1]
-        })
-        break
-      }
+  for (const [pattern, handlerPath, basePath] of CATCH_ALL_ROUTES) {
+    if (pattern.test(pathname)) {
+      resolvedHandlerPath = handlerPath
+      const remaining = pathname.slice(basePath.length).replace(/^\//, '')
+      pathSegments = remaining ? remaining.split('/') : []
+      break
     }
   }
 
@@ -122,9 +102,9 @@ const server = http.createServer(async (req, res) => {
       ;(req as any).body = body
     }
 
-    // Merge dynamic params into query
+    // Merge path segments and search params into query
     const searchParams = Object.fromEntries(url.searchParams.entries())
-    ;(req as any).query = { ...searchParams, ...dynamicParams }
+    ;(req as any).query = { ...searchParams, ...(pathSegments.length > 0 ? { path: pathSegments } : {}) }
 
     // Wrap response for Express-like handlers
     const wrappedRes = Object.create(res)
