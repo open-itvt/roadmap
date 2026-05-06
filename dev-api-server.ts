@@ -27,10 +27,16 @@ async function getHandler(handlerPath: string) {
 }
 
 // Consolidated catch-all handler paths
-const CATCH_ALL_ROUTES: [RegExp, string, string][] = [
-  [/^\/api\/auth(\/.*)?$/, './api/auth/[...path].ts', '/api/auth'],
-  [/^\/api\/admin(\/.*)?$/, './api/admin/[[...path]].ts', '/api/admin'],
-  [/^\/api\/projects(\/.*)?$/, './api/projects/[[...path]].ts', '/api/projects'],
+interface CatchAllRoute {
+  pattern: RegExp
+  handlerPath: string
+  basePath: string
+}
+
+const CATCH_ALL_ROUTES: CatchAllRoute[] = [
+  { pattern: /^\/api\/auth(\/.*)?$/, handlerPath: './api/auth/[...path].ts', basePath: '/api/auth' },
+  { pattern: /^\/api\/admin(\/.*)?$/, handlerPath: './api/admin/[[...path]].ts', basePath: '/api/admin' },
+  { pattern: /^\/api\/projects(\/.*)?$/, handlerPath: './api/projects/[[...path]].ts', basePath: '/api/projects' },
 ]
 
 // Parse JSON body
@@ -72,7 +78,7 @@ const server = http.createServer(async (req, res) => {
   let resolvedHandlerPath: string | undefined
   let pathSegments: string[] = []
 
-  for (const [pattern, handlerPath, basePath] of CATCH_ALL_ROUTES) {
+  for (const { pattern, handlerPath, basePath } of CATCH_ALL_ROUTES) {
     if (pattern.test(pathname)) {
       resolvedHandlerPath = handlerPath
       const remaining = pathname.slice(basePath.length).replace(/^\//, '')
