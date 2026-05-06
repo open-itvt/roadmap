@@ -30,7 +30,7 @@ export default async function handler(req: any, res: any) {
     const secret = speakeasy.generateSecret({ name: `Roadmap (${username})` })
     const otpAuthUrl = secret.otpauth_url
     if (!otpAuthUrl) {
-      res.status(500).json({ error: 'Failed to generate TOTP secret' })
+      res.status(500).json({ error: 'Failed to generate TOTP URL' })
       return
     }
 
