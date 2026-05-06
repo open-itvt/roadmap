@@ -912,18 +912,22 @@ export function AdminPanelScreen() {
                 <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
                   <span className="text-violet-300">●</span> Ikona / emoji
                 </label>
-                <div className="flex gap-2.5">
-                  <input
-                    type="text"
-                    value={newProjectData.icon}
-                    onChange={(e) => setNewProjectData({ ...newProjectData, icon: e.target.value })}
-                    placeholder="np. 🚀, ⚙️, 📱, ☁️"
-                    className="flex-1 rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
-                    maxLength={12}
-                  />
-                  <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl border border-slate-700/30 bg-white/[0.03] text-lg">
-                    {renderProjectIcon(normalizeProjectIconInput(newProjectData.icon))}
-                  </div>
+                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                  {Object.keys(PROJECT_ICON_COMPONENTS).map((iconKey) => (
+                    <button
+                      key={iconKey}
+                      type="button"
+                      onClick={() => setNewProjectData({ ...newProjectData, icon: iconKey })}
+                      className={`flex h-10 items-center justify-center rounded-lg border transition ${
+                        newProjectData.icon === iconKey
+                          ? 'border-violet-400 bg-violet-500/20 text-violet-300'
+                          : 'border-slate-700/30 bg-white/[0.03] text-slate-400 hover:border-slate-700/50 hover:bg-white/[0.05] hover:text-slate-300'
+                      }`}
+                      title={iconKey}
+                    >
+                      {renderProjectIcon(iconKey)}
+                    </button>
+                  ))}
                 </div>
               </div>
 
@@ -1004,14 +1008,23 @@ export function AdminPanelScreen() {
                   <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
                     <span className="text-violet-300">●</span> Ikona / skrót
                   </label>
-                  <input
-                    type="text"
-                    value={newStageData.icon}
-                    onChange={(e) => setNewStageData({ ...newStageData, icon: e.target.value })}
-                    placeholder="check, dot, 1, 2"
-                    className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
-                    maxLength={12}
-                  />
+                  <div className="flex flex-wrap gap-2">
+                    {['check', 'dot', '1', '2', '3', '4', '5'].map((option) => (
+                      <button
+                        key={option}
+                        type="button"
+                        onClick={() => setNewStageData({ ...newStageData, icon: option })}
+                        className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition ${
+                          newStageData.icon === option
+                            ? 'border-violet-400 bg-violet-500/20 text-violet-300'
+                            : 'border-slate-700/30 bg-white/[0.03] text-slate-400 hover:border-slate-700/50 hover:bg-white/[0.05] hover:text-slate-300'
+                        }`}
+                        title={option}
+                      >
+                        {renderStageIcon(option)}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
