@@ -253,7 +253,8 @@ function ManagementTabContent({
         )}
       </section>
 
-      {/* Stages section */}
+      {/* Stages section - only show if project is selected */}
+      {selectedProject && (
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -359,6 +360,7 @@ function ManagementTabContent({
           </div>
         )}
       </section>
+      )}
     </div>
   )
 }
@@ -644,7 +646,7 @@ export function AdminPanelScreen() {
           </button>
           <a
             href="/"
-            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-white/8 hover:bg-white/5"
+            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5"
           >
             <FaGlobe className="text-slate-400" />
             Podgląd publiczny
@@ -653,11 +655,13 @@ export function AdminPanelScreen() {
         </div>
       </div>
 
+      {selectedProject && (
+        <>
       <div className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Bieżący projekt</div>
       <div className="px-3">
         <button
           type="button"
-          className="flex w-full items-center gap-3 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-left transition hover:border-white/12 hover:bg-white/[0.05]"
+          className="flex w-full items-center gap-3 rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 py-2.5 text-left transition hover:border-slate-700/40 hover:bg-white/[0.05]"
         >
           <span className={`grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br ${PROJECT_GRADIENTS[0]} text-white shadow-lg shadow-violet-500/20`}>
             {renderProjectIcon(selectedProject?.icon || '')}
@@ -680,37 +684,38 @@ export function AdminPanelScreen() {
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-white/8 hover:bg-white/5"
+            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5"
           >
             <FaInfoCircle className="text-slate-400" />
             Szczegóły projektu
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-white/8 hover:bg-white/5"
+            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5"
           >
             <FaCode className="text-slate-400" />
             Linki (GitHub)
           </button>
           <button
             type="button"
-            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-white/8 hover:bg-white/5"
+            className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5"
           >
             <FaCogs className="text-slate-400" />
             Ustawienia
           </button>
         </div>
       </div>
+        </>
+      )}
 
-      <div className="mt-auto border-t border-white/8 p-4">
-        <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3.5">
-          <div className="text-xs font-semibold text-white">Potrzebujesz pomocy?</div>
-          <div className="mt-1 text-xs leading-5 text-slate-400">Zobacz dokumentację lub wróć do publicznego widoku.</div>
-          <a href="/" className="mt-3 inline-flex items-center gap-2 text-xs font-medium text-violet-300 transition hover:text-violet-200">
-            Zobacz dokumentację
-            <span>↗</span>
-          </a>
-        </div>
+      <div className="mt-auto border-t border-slate-700/30 p-4">
+        <button
+          type="button"
+          onClick={handleLogout}
+          className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-700/40 hover:bg-white/[0.05]"
+        >
+          Wyloguj
+        </button>
       </div>
     </>
   )
@@ -785,14 +790,14 @@ export function AdminPanelScreen() {
             <button
               type="button"
               onClick={handleLogout}
-              className="hidden rounded-xl border border-white/6 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06] lg:inline-flex"
+              className="hidden rounded-xl border border-slate-700/30 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06] lg:inline-flex"
             >
               Wyloguj
             </button>
           </div>
 
           {/* Tabs */}
-          <div className="mb-6 flex items-center gap-6 border-b border-white/6 text-sm">
+          <div className="mb-6 flex items-center gap-6 border-b border-slate-700/20 text-sm">
             <button
               onClick={() => setActiveTab('management')}
               className={`relative pb-3 font-medium transition ${
@@ -853,19 +858,19 @@ export function AdminPanelScreen() {
           )}
 
           {activeTab === 'details' && (
-            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/6 bg-white/[0.03]">
+            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-700/20 bg-white/[0.03]">
               <p className="text-slate-400">Szczegóły projektu - wkrótce dostępne</p>
             </div>
           )}
 
           {activeTab === 'links' && (
-            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/6 bg-white/[0.03]">
+            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-700/20 bg-white/[0.03]">
               <p className="text-slate-400">Linki projektu - wkrótce dostępne</p>
             </div>
           )}
 
           {activeTab === 'settings' && (
-            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-white/6 bg-white/[0.03]">
+            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-700/20 bg-white/[0.03]">
               <p className="text-slate-400">Ustawienia - wkrótce dostępne</p>
             </div>
           )}
