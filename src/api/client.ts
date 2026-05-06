@@ -16,6 +16,12 @@ function resolveBaseURL(): string {
     const envUrl = new URL(API_BASE_URL)
     const currentOrigin = window.location.origin
 
+    const isLocalDevHost = envUrl.hostname === 'localhost' || envUrl.hostname === '127.0.0.1'
+
+    if (isLocalDevHost) {
+      return ''
+    }
+
     if (envUrl.origin === currentOrigin) {
       return ''
     }
