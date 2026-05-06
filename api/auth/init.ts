@@ -29,6 +29,10 @@ export default async function handler(req: any, res: any) {
     // Generate TOTP secret
     const secret = speakeasy.generateSecret({ name: `Roadmap (${username})` })
     const otpAuthUrl = secret.otpauth_url
+    if (!otpAuthUrl) {
+      res.status(500).json({ error: 'Failed to generate TOTP secret' })
+      return
+    }
 
     // Create QR code data URL
     const qrCodeDataUrl = await qrcode.toDataURL(otpAuthUrl)
