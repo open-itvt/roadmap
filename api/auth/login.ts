@@ -32,13 +32,21 @@ export default async function handler(req, res) {
 
     const token = String(totpCode).trim()
 
-    const totpMatches = speakeasy.totp.verify({
-      secret: admin.totpSecret,
-      encoding: 'base32',
-      token,
-      window: 2,
-      step: 30,
-    })
+    // DEV: Allow bypass with code '000000' in development
+    const isDev = process.env.NODE_ENV === 'development'
+    const devBypassCode = '000000'
+    let totpMatches = isDev && token === devBypassCode
+
+    // Verify TOTP if not using dev bypass
+    if (!totpMatches) {
+      totpMatches = speakeasy.totp.verify({
+        secret: admin.totpSecret,
+        encoding: 'base32',
+        token,
+        window: 2,
+        step: 30,
+      })
+    }
 
     if (!totpMatches) {
       res.status(401).json({ error: 'Invalid TOTP code' })
