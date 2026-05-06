@@ -1,4 +1,6 @@
-import { getProjectsFromRedis, saveProjectsToRedis, getStagesFromRedis, saveStagestoRedis } from '../../projects/_shared'
+import redis from '../_upstashClient'
+import { handleCors } from '../_cors'
+import { getProjectsFromRedis, saveProjectsToRedis, saveStagestoRedis } from '../projects/_shared'
 import type { Project, Stage } from '@/types'
 
 const SAMPLE_PROJECT: Project = {
@@ -84,34 +86,80 @@ const SAMPLE_STAGES: Stage[] = [
   },
 ]
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
+  if (handleCors(req, res)) return
+
+  const segments: string[] = Array.isArray(req.query.path)
+    ? req.query.path
+    : req.query.path
+    ? [req.query.path]
+    : []
+
+  const route = segments.join('/')
+
+  switch (route) {
+    case 'reset':
+      return handleReset(req, res)
+    case 'init':
+      return handleInit(req, res)
+    default:
+      res.status(404).json({ error: 'Not found' })
+  }
+}
+
+async function handleReset(req: any, res: any) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' })
     return
   }
 
   try {
-    // Check if data already exists
+    const adminKeys = await redis.keys('admin:*')
+    for (const key of adminKeys) {
+      await redis.del(String(key))
+    }
+
+    const sessionKeys = await redis.keys('session:*')
+    for (const key of sessionKeys) {
+      await redis.del(String(key))
+    }
+
+    res.status(200).json({
+      success: true,
+      data: { message: 'Admin data reset successfully' },
+    })
+  } catch (error) {
+    console.error('admin/reset error', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+async function handleInit(req: any, res: any) {
+  if (req.method !== 'POST') {
+    res.status(405).json({ error: 'Method not allowed' })
+    return
+  }
+
+  try {
     const existingProjects = await getProjectsFromRedis()
     if (existingProjects.length > 0) {
       res.status(200).json({ success: true, message: 'Data already initialized' })
       return
     }
 
-    // Initialize with sample data
     await saveProjectsToRedis([SAMPLE_PROJECT])
     await saveStagestoRedis(SAMPLE_STAGES)
 
-    res.status(200).json({ 
-      success: true, 
+    res.status(200).json({
+      success: true,
       message: 'Sample data initialized successfully',
       data: {
         project: SAMPLE_PROJECT,
         stages: SAMPLE_STAGES,
-      }
+      },
     })
   } catch (error) {
-    console.error('api/init error:', error)
+    console.error('admin/init error:', error)
     res.status(500).json({ error: 'Internal server error' })
   }
 }

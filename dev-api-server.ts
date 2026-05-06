@@ -26,21 +26,18 @@ async function getHandler(handlerPath: string) {
   }
 }
 
-// Route mapping
-const routeMap: Record<string, string> = {
-  '/api/auth/me': './api/auth/me.ts',
-  '/api/auth/init': './api/auth/init.ts',
-  '/api/auth/login': './api/auth/login.ts',
-  '/api/auth/logout': './api/auth/logout.ts',
-  '/api/auth/verify-totp': './api/auth/verify-totp.ts',
-  '/api/auth/set-password': './api/auth/set-password.ts',
-  '/api/auth/webauthn/auth/start': './api/auth/webauthn/auth/start.ts',
-  '/api/auth/webauthn/auth/complete': './api/auth/webauthn/auth/complete.ts',
-  '/api/auth/webauthn/register/start': './api/auth/webauthn/register/start.ts',
-  '/api/auth/webauthn/register/complete': './api/auth/webauthn/register/complete.ts',
-  '/api/admin/reset': './api/admin/reset.ts',
-  '/api/projects': './api/projects.ts',
+// Consolidated catch-all handler paths
+interface CatchAllRoute {
+  pattern: RegExp
+  handlerPath: string
+  basePath: string
 }
+
+const CATCH_ALL_ROUTES: CatchAllRoute[] = [
+  { pattern: /^\/api\/auth(\/.*)?$/, handlerPath: './api/auth/[...path].ts', basePath: '/api/auth' },
+  { pattern: /^\/api\/admin(\/.*)?$/, handlerPath: './api/admin/[[...path]].ts', basePath: '/api/admin' },
+  { pattern: /^\/api\/projects(\/.*)?$/, handlerPath: './api/projects/[[...path]].ts', basePath: '/api/projects' },
+]
 
 // Parse JSON body
 function parseBody(req: http.IncomingMessage): Promise<Record<string, any>> {
@@ -78,16 +75,26 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  const handlerPath = routeMap[pathname]
+  let resolvedHandlerPath: string | undefined
+  let pathSegments: string[] = []
 
-  if (!handlerPath) {
+  for (const { pattern, handlerPath, basePath } of CATCH_ALL_ROUTES) {
+    if (pattern.test(pathname)) {
+      resolvedHandlerPath = handlerPath
+      const remaining = pathname.slice(basePath.length).replace(/^\//, '')
+      pathSegments = remaining ? remaining.split('/') : []
+      break
+    }
+  }
+
+  if (!resolvedHandlerPath) {
     res.writeHead(404, { 'Content-Type': 'application/json', ...corsHeaders })
     res.end(JSON.stringify({ error: 'Not found', success: false }))
     return
   }
 
   try {
-    const handler = await getHandler(handlerPath)
+    const handler = await getHandler(resolvedHandlerPath)
 
     if (!handler) {
       res.writeHead(500, { 'Content-Type': 'application/json', ...corsHeaders })
@@ -100,6 +107,10 @@ const server = http.createServer(async (req, res) => {
       const body = await parseBody(req)
       ;(req as any).body = body
     }
+
+    // Merge path segments and search params into query
+    const searchParams = Object.fromEntries(url.searchParams.entries())
+    ;(req as any).query = { ...searchParams, ...(pathSegments.length > 0 ? { path: pathSegments } : {}) }
 
     // Wrap response for Express-like handlers
     const wrappedRes = Object.create(res)
