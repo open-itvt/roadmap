@@ -1,29 +1,60 @@
-import { useState } from 'react'
-import { useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { FaEye, FaEyeSlash, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { authApi } from '@/api/auth'
 import { generateRandomPassword, validatePasswordStrength } from '@/utils/crypto'
 
+const SETUP_STORAGE_KEY = 'roadmapSetupState'
+
+type SetupRouteStep = 'login' | '2fa' | 'pass'
+
+type SetupState = {
+  step: SetupRouteStep
+  username: string
+  sessionId: string
+  qrCode: string
+}
+
+const defaultSetupState: SetupState = {
+  step: 'login',
+  username: '',
+  sessionId: '',
+  qrCode: '',
+}
+
+function loadSetupState(): SetupState {
+  if (typeof window === 'undefined') {
+    return defaultSetupState
+  }
+
+  try {
+    const item = localStorage.getItem(SETUP_STORAGE_KEY)
+    if (!item) {
+      return defaultSetupState
+    }
+    const data = JSON.parse(item) as Partial<SetupState>
+    return {
+      step: data.step ?? 'login',
+      username: data.username ?? '',
+      sessionId: data.sessionId ?? '',
+      qrCode: data.qrCode ?? '',
+    }
+  } catch {
+    return defaultSetupState
+  }
+}
+
+function saveSetupState(state: SetupState) {
+  localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(state))
+}
+
+function clearSetupState() {
+  localStorage.removeItem(SETUP_STORAGE_KEY)
+}
+
 export function SetupPage() {
   const navigate = useNavigate()
-  useEffect(() => {
-    let mounted = true
-    ;(async () => {
-      try {
-        const auth = await authApi.checkAuth()
-        if (mounted && auth.adminExists) {
-          navigate('/auth/login', { replace: true })
-        }
-      } catch (err) {
-        // ignore
-      }
-    })()
-    return () => {
-      mounted = false
-    }
-  }, [navigate])
-  const [step, setStep] = useState<'init' | 'totp' | 'password'>('init')
+  const location = useLocation()
   const [username, setUsername] = useState('')
   const [sessionId, setSessionId] = useState('')
   const [qrCode, setQrCode] = useState('')
@@ -33,6 +64,59 @@ export function SetupPage() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [passwordStrength, setPasswordStrength] = useState({ isStrong: false, feedback: [] as string[] })
+  const [storedSetupState, setStoredSetupState] = useState<SetupState>(defaultSetupState)
+
+  const routeStep = useMemo<'init' | 'totp' | 'password'>(() => {
+    if (location.pathname.endsWith('/2fa')) {
+      return 'totp'
+    }
+    if (location.pathname.endsWith('/pass')) {
+      return 'password'
+    }
+    return 'init'
+  }, [location.pathname])
+
+  useEffect(() => {
+    const storedState = loadSetupState()
+    setStoredSetupState(storedState)
+    setUsername(storedState.username)
+    setSessionId(storedState.sessionId)
+    setQrCode(storedState.qrCode)
+
+    const currentPath = location.pathname.replace(/\/+$/, '')
+    const isRootPath = currentPath === '/auth/setup'
+
+    if (isRootPath) {
+      const target = storedState.step === '2fa'
+        ? '/auth/setup/2fa'
+        : storedState.step === 'pass'
+          ? '/auth/setup/pass'
+          : '/auth/setup/username'
+      navigate(target, { replace: true })
+      return
+    }
+
+    if (routeStep !== 'init' && !storedState.sessionId) {
+      navigate('/auth/setup/username', { replace: true })
+      return
+    }
+
+    if (currentPath === '/auth/setup/username' && storedState.step !== 'login' && storedState.sessionId) {
+      const nextPath = storedState.step === '2fa'
+        ? '/auth/setup/2fa'
+        : '/auth/setup/pass'
+      navigate(nextPath, { replace: true })
+    }
+  }, [location.pathname, navigate, routeStep])
+
+  const updateSetupState = (updates: Partial<SetupState>) => {
+    const nextState: SetupState = {
+      ...storedSetupState,
+      ...updates,
+    }
+    setStoredSetupState(nextState)
+    saveSetupState(nextState)
+  }
 
   const handleInitAuth = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -43,7 +127,13 @@ export function SetupPage() {
       const response = await authApi.initAuth(username)
       setSessionId(response.sessionId)
       setQrCode(response.qrCode)
-      setStep('totp')
+      updateSetupState({
+        step: '2fa',
+        username,
+        sessionId: response.sessionId,
+        qrCode: response.qrCode,
+      })
+      navigate('/auth/setup/2fa', { replace: true })
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to initialize authentication')
     } finally {
@@ -55,10 +145,12 @@ export function SetupPage() {
     e.preventDefault()
     setLoading(true)
     setError('')
+    const currentSessionId = sessionId || storedSetupState.sessionId
 
     try {
-      await authApi.verifyTotp(sessionId, totpCode)
-      setStep('password')
+      await authApi.verifyTotp(currentSessionId, totpCode)
+      updateSetupState({ step: 'pass' })
+      navigate('/auth/setup/pass', { replace: true })
     } catch (err: any) {
       setError(err.response?.data?.error || 'Invalid TOTP code')
     } finally {
@@ -68,7 +160,8 @@ export function SetupPage() {
 
   const handleSetPassword = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+    const currentSessionId = sessionId || storedSetupState.sessionId
+
     if (!passwordStrength.isStrong) {
       setError('Password does not meet security requirements')
       return
@@ -78,7 +171,8 @@ export function SetupPage() {
     setError('')
 
     try {
-      await authApi.setPassword(sessionId, password)
+      await authApi.setPassword(currentSessionId, password)
+      clearSetupState()
       navigate('/auth/login', { replace: true })
     } catch (err: any) {
       setError(err.response?.data?.error || 'Failed to set password')
@@ -86,6 +180,8 @@ export function SetupPage() {
       setLoading(false)
     }
   }
+
+  const step = routeStep
 
   const handleGeneratePassword = () => {
     const newPassword = generateRandomPassword(16)

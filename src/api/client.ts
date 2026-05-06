@@ -3,8 +3,40 @@ import axios, { AxiosInstance } from 'axios'
 // Create axios instance with base configuration
 import { API_BASE_URL } from '@/config/hosts'
 
+function resolveBaseURL(): string {
+  if (!API_BASE_URL) {
+    return ''
+  }
+
+  if (typeof window === 'undefined') {
+    return API_BASE_URL
+  }
+
+  try {
+    const envUrl = new URL(API_BASE_URL)
+    const currentOrigin = window.location.origin
+
+    if (envUrl.origin === currentOrigin) {
+      return ''
+    }
+
+    const samePort = envUrl.port === window.location.port
+    const localhostAlias =
+      (envUrl.hostname === 'localhost' && window.location.hostname === '127.0.0.1') ||
+      (envUrl.hostname === '127.0.0.1' && window.location.hostname === 'localhost')
+
+    if (samePort && localhostAlias) {
+      return ''
+    }
+  } catch {
+    // ignore invalid URL and fall back to configured value
+  }
+
+  return API_BASE_URL
+}
+
 const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL || '',
+  baseURL: resolveBaseURL(),
   headers: {
     'Content-Type': 'application/json',
   },

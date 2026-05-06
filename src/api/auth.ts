@@ -31,6 +31,18 @@ export interface LoginResponse {
   adminId: string
 }
 
+function unwrapResponse<T>(data: ApiResponse<T>): T {
+  if (data.data !== undefined) {
+    return data.data
+  }
+
+  if (data.success && typeof data === 'object' && data !== null) {
+    return data as unknown as T
+  }
+
+  throw new Error(data.error || 'Invalid response from API')
+}
+
 export interface WebAuthnStartResponse {
   sessionId: string
   challenge: string
@@ -48,7 +60,7 @@ export const authApi = {
   // First-time setup: Initialize 2FA
   initAuth: async (username: string): Promise<InitAuthResponse> => {
     const { data } = await apiClient.post<ApiResponse<InitAuthResponse>>('/api/auth/init', { username })
-    return data.data!
+    return unwrapResponse<InitAuthResponse>(data)
   },
 
   // First-time setup: Verify TOTP code
@@ -57,7 +69,7 @@ export const authApi = {
       sessionId,
       totpCode,
     })
-    return data.data!
+    return unwrapResponse<{ success: boolean }>(data)
   },
 
   // First-time setup: Set password
@@ -66,7 +78,7 @@ export const authApi = {
       sessionId,
       password,
     })
-    return data.data!
+    return unwrapResponse<{ success: boolean }>(data)
   },
 
   // Subsequent logins
@@ -76,7 +88,11 @@ export const authApi = {
       password,
       totpCode,
     })
-    return data.data!
+    const payload = unwrapResponse<LoginResponse>(data)
+    if (!payload?.sessionToken) {
+      throw new Error('Login response missing session token')
+    }
+    return payload
   },
 
   // Logout
