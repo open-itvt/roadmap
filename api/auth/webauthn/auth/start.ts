@@ -4,7 +4,7 @@ import redis from '../../../upstashClient'
 import { v4 as uuidv4 } from 'uuid'
 import { handleCors } from '../../../_cors'
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return
 
   if (req.method !== 'POST') {

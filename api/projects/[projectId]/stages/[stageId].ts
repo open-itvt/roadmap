@@ -1,6 +1,6 @@
-import { getStageById, updateStage, deleteStage, getProjectById } from '../../../../projects/_shared'
+import { getStageById, updateStage, deleteStage, getProjectById } from '../../_shared'
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   const { projectId, stageId } = req.query
 
   if (!projectId || !stageId) {

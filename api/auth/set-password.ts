@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs'
 import redis from '../upstashClient'
 import { handleCors } from '../_cors'
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return
 
   if (req.method !== 'POST') {
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       return
     }
 
-    const payload = JSON.parse(raw)
+    const payload = JSON.parse(String(raw))
     if (!payload.totpVerified) {
       res.status(400).json({ error: 'TOTP not verified yet' })
       return

@@ -1,4 +1,4 @@
-import { getProjectsFromRedis, saveProjectsToRedis, getStagesFromRedis, saveStagestoRedis } from '../../projects/_shared'
+import { getProjectsFromRedis, saveProjectsToRedis, saveStagestoRedis } from './projects/_shared'
 import type { Project, Stage } from '@/types'
 
 const SAMPLE_PROJECT: Project = {
@@ -84,7 +84,7 @@ const SAMPLE_STAGES: Stage[] = [
   },
 ]
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'Method not allowed' })
     return

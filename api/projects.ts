@@ -1,6 +1,6 @@
 import { getProjectsFromRedis, createProject } from './projects/_shared'
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   try {
     if (req.method === 'GET') {
       const projects = await getProjectsFromRedis()

@@ -2,7 +2,7 @@ import speakeasy from 'speakeasy'
 import redis from '../upstashClient'
 import { handleCors } from '../_cors'
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return
 
   if (req.method !== 'POST') {
@@ -24,7 +24,7 @@ export default async function handler(req, res) {
       return
     }
 
-    const payload = JSON.parse(raw)
+    const payload = JSON.parse(String(raw))
     const secret = payload.totpSecret
     const token = String(totpCode).trim()
 

@@ -1,6 +1,6 @@
-import { getProjectById, updateProject, deleteProject } from '../../../projects/_shared'
+import { getProjectById, updateProject, deleteProject } from '../_shared'
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   const { projectId } = req.query
 
   if (!projectId) {

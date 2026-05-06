@@ -1,7 +1,7 @@
 import { getSessionFromToken, getAdminByUsername, getAllAdmins } from './_shared'
 import { handleCors } from '../_cors'
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   if (req.method !== 'GET') {
     res.status(405).json({ error: 'Method not allowed' })
     return
