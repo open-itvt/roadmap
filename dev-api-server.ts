@@ -42,6 +42,13 @@ const routeMap: Record<string, string> = {
   '/api/projects': './api/projects.ts',
 }
 
+// Dynamic route patterns: [regex, handlerPath, paramNames]
+const dynamicRoutes: [RegExp, string, string[]][] = [
+  [/^\/api\/projects\/([^/]+)\/stages\/([^/]+)$/, './api/projects/[projectId]/stages/[stageId].ts', ['projectId', 'stageId']],
+  [/^\/api\/projects\/([^/]+)\/stages$/, './api/projects/[projectId]/stages.ts', ['projectId']],
+  [/^\/api\/projects\/([^/]+)$/, './api/projects/[projectId]/index.ts', ['projectId']],
+]
+
 // Parse JSON body
 function parseBody(req: http.IncomingMessage): Promise<Record<string, any>> {
   return new Promise((resolve) => {
@@ -78,16 +85,30 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  const handlerPath = routeMap[pathname]
+  let resolvedHandlerPath = routeMap[pathname]
+  let dynamicParams: Record<string, string> = {}
 
-  if (!handlerPath) {
+  if (!resolvedHandlerPath) {
+    for (const [pattern, dynPath, paramNames] of dynamicRoutes) {
+      const match = pathname.match(pattern)
+      if (match) {
+        resolvedHandlerPath = dynPath
+        paramNames.forEach((name, i) => {
+          dynamicParams[name] = match[i + 1]
+        })
+        break
+      }
+    }
+  }
+
+  if (!resolvedHandlerPath) {
     res.writeHead(404, { 'Content-Type': 'application/json', ...corsHeaders })
     res.end(JSON.stringify({ error: 'Not found', success: false }))
     return
   }
 
   try {
-    const handler = await getHandler(handlerPath)
+    const handler = await getHandler(resolvedHandlerPath)
 
     if (!handler) {
       res.writeHead(500, { 'Content-Type': 'application/json', ...corsHeaders })
@@ -100,6 +121,10 @@ const server = http.createServer(async (req, res) => {
       const body = await parseBody(req)
       ;(req as any).body = body
     }
+
+    // Merge dynamic params into query
+    const searchParams = Object.fromEntries(url.searchParams.entries())
+    ;(req as any).query = { ...searchParams, ...dynamicParams }
 
     // Wrap response for Express-like handlers
     const wrappedRes = Object.create(res)

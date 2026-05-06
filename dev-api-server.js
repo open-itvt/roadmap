@@ -25,6 +25,13 @@ const routeMap = {
   '/api/projects': 'api/projects.ts',
 }
 
+// Dynamic route patterns: [regex, handlerPath, paramNames]
+const dynamicRoutes = [
+  [/^\/api\/projects\/([^/]+)\/stages\/([^/]+)$/, 'api/projects/[projectId]/stages/[stageId].ts', ['projectId', 'stageId']],
+  [/^\/api\/projects\/([^/]+)\/stages$/, 'api/projects/[projectId]/stages.ts', ['projectId']],
+  [/^\/api\/projects\/([^/]+)$/, 'api/projects/[projectId]/index.ts', ['projectId']],
+]
+
 // Load handlers dynamically
 async function loadHandlers() {
   for (const [route, filePath] of Object.entries(routeMap)) {
@@ -45,8 +52,27 @@ const server = http.createServer(async (req, res) => {
   // Log request
   console.log(`${req.method} ${pathname}`)
 
-  // Find matching handler
-  const handler = handlers[pathname]
+  // Find matching handler (static routes first, then dynamic)
+  let handler = handlers[pathname]
+  let dynamicParams = {}
+
+  if (!handler) {
+    for (const [pattern, dynPath, paramNames] of dynamicRoutes) {
+      const match = pathname.match(pattern)
+      if (match) {
+        try {
+          const module = await import(path.join(__dirname, dynPath))
+          handler = module.default
+          paramNames.forEach((name, i) => {
+            dynamicParams[name] = match[i + 1]
+          })
+        } catch (error) {
+          console.warn(`Warning: Could not load handler for ${dynPath}:`, error.message)
+        }
+        break
+      }
+    }
+  }
 
   if (!handler) {
     res.writeHead(404, { 'Content-Type': 'application/json' })
@@ -66,9 +92,11 @@ const server = http.createServer(async (req, res) => {
       } catch {
         req.body = {}
       }
+      req.query = { ...parsedUrl.query, ...dynamicParams }
       handler(req, res)
     })
   } else {
+    req.query = { ...parsedUrl.query, ...dynamicParams }
     handler(req, res)
   }
 })
