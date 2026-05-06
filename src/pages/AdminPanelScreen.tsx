@@ -382,7 +382,7 @@ export function AdminPanelScreen() {
   const [newProjectData, setNewProjectData] = useState({
     name: '',
     description: '',
-    icon: '',
+    icon: 'rocket',
     priority: 'medium' as Project['priority'],
     progress: 0,
     startDate: new Date().toISOString().split('T')[0],
@@ -398,7 +398,7 @@ export function AdminPanelScreen() {
     status: 'pending' as Stage['status'],
     icon: '',
   })
-  const [activeTab, setActiveTab] = useState<'management' | 'details' | 'links' | 'settings'>('management')
+  const [activeTab, setActiveTab] = useState<'management' | 'details' | 'links' | 'settings' | 'demo'>('management')
 
   useEffect(() => {
     void loadProjects()
@@ -768,16 +768,8 @@ export function AdminPanelScreen() {
             </button>
             <div className="flex flex-row items-center gap-2">
               <div className="min-w-0 text-right flex-1">
-                <div className="truncate text-sm font-semibold text-white">Roadmap Admin</div>
+                <div className="text-sm font-semibold text-white">Roadmap Admin</div>
               </div>
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100 flex-shrink-0"
-                aria-label="Logout"
-              >
-                <span className="text-xs">Wyjdź</span>
-              </button>
             </div>
           </div>
 
@@ -831,6 +823,16 @@ export function AdminPanelScreen() {
             >
               Ustawienia
             </button>
+            <button
+              onClick={() => setActiveTab('demo')}
+              className={`relative pb-3 font-medium transition whitespace-nowrap ${
+                activeTab === 'demo'
+                  ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
+                  : 'text-slate-400 hover:text-slate-300'
+              }`}
+            >
+              Demo
+            </button>
           </div>
 
           {/* Tab content */}
@@ -867,12 +869,35 @@ export function AdminPanelScreen() {
               <p className="text-slate-400">Ustawienia - wkrótce dostępne</p>
             </div>
           )}
+
+          {activeTab === 'demo' && (
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Podgląd publiczny</h2>
+                <p className="text-sm text-slate-400 mb-4">Przejdź do publicznego widoku roadmapy, aby zobaczyć jak wyglądają Twoje projekty dla użytkowników.</p>
+                <a
+                  href="/demo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
+                >
+                  <FaGlobe />
+                  <span>Otwórz podgląd</span>
+                  <span className="ml-1">↗</span>
+                </a>
+              </div>
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h3 className="text-sm font-semibold text-slate-300 mb-2">O widoku demo</h3>
+                <p className="text-xs sm:text-sm text-slate-400">Ten widok pokazuje Twoją roadmapę dokładnie tak jak widzą ją odwiedzający. Zawiera wszystkie projekty, etapy i ich status.</p>
+              </div>
+            </div>
+          )}
         </div>
       </main>
 
       {showNewProjectForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-md">
-          <div className="w-full max-w-sm rounded-[20px] sm:rounded-[28px] border border-slate-700/30 bg-gradient-to-b from-[#101620] to-[#0b1118] p-5 sm:p-8 shadow-2xl shadow-black/60">
+          <div className="w-full max-w-sm rounded-[20px] sm:rounded-[28px] border border-slate-600/50 bg-gradient-to-b from-[#1a1f2e] to-[#141820] p-5 sm:p-8 shadow-2xl shadow-black/60">
             <div className="mb-4 sm:mb-6">
               <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-white">{projectFormMode === 'edit' ? 'Edytuj projekt' : 'Nowy projekt'}</h2>
               <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">
@@ -953,7 +978,7 @@ export function AdminPanelScreen() {
 
       {showNewStageForm && selectedProject && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-md">
-          <div className="w-full max-w-sm rounded-[20px] sm:rounded-[28px] border border-slate-700/30 bg-gradient-to-b from-[#101620] to-[#0b1118] p-5 sm:p-8 shadow-2xl shadow-black/60">
+          <div className="w-full max-w-sm rounded-[20px] sm:rounded-[28px] border border-slate-600/50 bg-gradient-to-b from-[#1a1f2e] to-[#141820] p-5 sm:p-8 shadow-2xl shadow-black/60">
             <div className="mb-4 sm:mb-6">
               <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-white">{stageFormMode === 'edit' ? 'Edytuj etap' : 'Nowy etap'}</h2>
               <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">Projekt: <span className="font-medium text-violet-300 truncate">{selectedProject.name}</span></p>
