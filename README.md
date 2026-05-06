@@ -13,8 +13,11 @@ Roadmap tool built with Vite, React, Tailwind CSS, and serverless Upstash-backed
 ```bash
 pnpm install
 cp .env.example .env.local
+pnpm run dev:api
 pnpm dev
 ```
+
+The local API server loads environment variables from `.env.local` or `.env`.
 
 ## Environment Variables
 
