@@ -1,0 +1,21 @@
+{
+  "siteName": "Roadmap App",
+  "defaultTitle": "Roadmap",
+  "titleTemplate": "%s | %siteName%",
+  "description": "Manage and visualize your project roadmaps with ease.",
+  "keywords": ["roadmap", "project management", "planning", "development"],
+  "authors": [{ "name": "Roadmap Team" }],
+  "baseUrl": "https://roadmap.example.com",
+  "twitterHandle": "@roadmapapp",
+  "defaultOgImage": "/og-image.png",
+  "locale": ["en", "pl"],
+  "robots": {
+    "index": true,
+    "follow": true,
+    "googleBot": {
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1
+    }
+  }
+}
