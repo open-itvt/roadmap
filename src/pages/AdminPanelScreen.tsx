@@ -22,6 +22,8 @@ import {
   FaTrashAlt,
   FaCloud,
   FaChartLine,
+  FaBullseye,
+  FaUsers,
 } from 'react-icons/fa'
 import type { IconType } from 'react-icons'
 import { useNavigate } from 'react-router-dom'
@@ -852,21 +854,185 @@ export function AdminPanelScreen() {
             />
           )}
 
-          {activeTab === 'details' && (
-            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-700/20 bg-white/[0.03]">
-              <p className="text-slate-400">Szczegóły projektu - wkrótce dostępne</p>
+          {activeTab === 'details' && selectedProject && (
+            <div className="space-y-6 pb-10">
+              <section className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div className="max-w-2xl">
+                    <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-white/5 px-3 py-1 text-xs font-medium text-slate-300">
+                      <FaInfoCircle />
+                      <span>Szczegóły projektu</span>
+                    </div>
+                    <h3 className="text-2xl font-semibold tracking-tight text-white">{selectedProject.name}</h3>
+                    <p className="mt-3 text-sm leading-6 text-slate-300 lg:text-base">{selectedProject.description}</p>
+                  </div>
+                </div>
+              </section>
+
+              <div className="grid gap-4 xl:grid-cols-5">
+                <div className="space-y-4 xl:col-span-3">
+                  <section className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-5 sm:p-6">
+                    <div className="mb-4 flex items-center gap-3">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                        <FaChartLine />
+                      </span>
+                      <div>
+                        <div className="text-sm font-medium text-white">Postęp ogólny</div>
+                        <div className="text-xs text-slate-500">Aktualny stan projektu</div>
+                      </div>
+                    </div>
+
+                    <div className="flex items-end justify-between gap-4">
+                      <div>
+                        <div className="text-4xl font-semibold tracking-tight text-white">{selectedProject.progress}%</div>
+                        <p className="mt-1 text-sm text-slate-400">Wykonane względem planu</p>
+                      </div>
+                      <div className="rounded-2xl bg-white/5 px-3 py-2 text-xs text-slate-400">
+                        Start: {new Date(selectedProject.startDate).toLocaleDateString('pl-PL')}
+                      </div>
+                    </div>
+
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-800">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all"
+                        style={{ width: `${selectedProject.progress}%` }}
+                      />
+                    </div>
+                  </section>
+
+                  <section className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-5 sm:p-6">
+                    <div className="mb-4 flex items-center gap-3">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                        <FaCode />
+                      </span>
+                      <div>
+                        <div className="text-sm font-medium text-white">Technologie</div>
+                        <div className="text-xs text-slate-500">Stos używany w projekcie</div>
+                      </div>
+                    </div>
+
+                    {selectedProject.technologies && selectedProject.technologies.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {selectedProject.technologies.map((tech) => (
+                          <span
+                            key={tech}
+                            className="rounded-full border border-slate-700/30 bg-white/5 px-3 py-1 text-xs font-medium text-slate-300"
+                          >
+                            {tech}
+                          </span>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-slate-400">Brak przypisanych technologii.</p>
+                    )}
+                  </section>
+
+                  {selectedProject.goals && selectedProject.goals.length > 0 && (
+                    <section className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-5 sm:p-6">
+                      <div className="mb-4 flex items-center gap-3">
+                        <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                          <FaBullseye />
+                        </span>
+                        <div>
+                          <div className="text-sm font-medium text-white">Cele projektu</div>
+                          <div className="text-xs text-slate-500">Najważniejsze założenia</div>
+                        </div>
+                      </div>
+
+                      <ul className="grid gap-3">
+                        {selectedProject.goals.map((goal, index) => (
+                          <li key={index} className="flex items-start gap-3 rounded-2xl bg-white/[0.02] p-3 text-slate-300">
+                            <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-slate-800 text-[11px] font-semibold text-slate-300">
+                              {index + 1}
+                            </span>
+                            <span className="leading-6">{goal}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </section>
+                  )}
+                </div>
+
+                <aside className="grid gap-4 xl:col-span-2">
+                  <section className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-5 sm:p-6">
+                    <div className="mb-4 flex items-center gap-3">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                        <FaClock />
+                      </span>
+                      <div>
+                        <div className="text-sm font-medium text-white">Ostatnia aktualizacja</div>
+                        <div className="text-xs text-slate-500">Kiedy projekt był ostatnio zmieniany</div>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-white/[0.03] p-4">
+                      <div className="text-xl font-semibold text-white">{new Date(selectedProject.lastUpdate).toLocaleDateString('pl-PL')}</div>
+                      <p className="mt-1 text-sm text-slate-400">
+                        {new Date(selectedProject.lastUpdate).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })}
+                      </p>
+                    </div>
+                  </section>
+
+                  <section className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-5 sm:p-6">
+                    <div className="mb-4 flex items-center gap-3">
+                      <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+                        <FaUsers />
+                      </span>
+                      <div>
+                        <div className="text-sm font-medium text-white">Zespół</div>
+                        <div className="text-xs text-slate-500">Liczba osób w projekcie</div>
+                      </div>
+                    </div>
+                    <div className="rounded-2xl bg-white/[0.03] p-4">
+                      <div className="text-3xl font-semibold tracking-tight text-white">{selectedProject.teamSize}</div>
+                      <p className="mt-1 text-sm text-slate-400">członków zespołu</p>
+                    </div>
+                  </section>
+                </aside>
+              </div>
             </div>
           )}
 
           {activeTab === 'links' && (
-            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-700/20 bg-white/[0.03]">
-              <p className="text-slate-400">Linki projektu - wkrótce dostępne</p>
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h3 className="text-lg font-semibold text-white mb-2">Linki projektu</h3>
+                <p className="text-sm text-slate-400 mb-6">Tutaj będą wyświetlane linki do repozytorium GitHub, website'u i innych zasobów projektu.</p>
+                <div className="rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4 text-center">
+                  <p className="text-sm text-slate-400">Funkcionalność wkrótce dostępna</p>
+                </div>
+              </div>
             </div>
           )}
 
-          {activeTab === 'settings' && (
-            <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-700/20 bg-white/[0.03]">
-              <p className="text-slate-400">Ustawienia - wkrótce dostępne</p>
+          {activeTab === 'settings' && selectedProject && (
+            <div className="space-y-4">
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h3 className="text-lg font-semibold text-white mb-2">Ustawienia projektu</h3>
+                <p className="text-sm text-slate-400 mb-6">{selectedProject.name}</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-700/20 bg-white/[0.02] p-4">
+                    <div className="text-xs font-semibold text-slate-400 mb-2 uppercase">Status</div>
+                    <p className="text-sm text-white capitalize">{selectedProject.status === 'active' ? 'Aktywny' : selectedProject.status === 'completed' ? 'Ukończony' : 'Zarchiwizowany'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-700/20 bg-white/[0.02] p-4">
+                    <div className="text-xs font-semibold text-slate-400 mb-2 uppercase">Priorytet</div>
+                    <p className="text-sm text-white capitalize">{selectedProject.priority === 'high' ? 'Wysoki' : selectedProject.priority === 'medium' ? 'Średni' : 'Niski'}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h4 className="text-sm font-semibold text-slate-300 mb-3">Szybkie akcje</h4>
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={() => { setProjectFormMode('edit'); setProjectFormProjectId(selectedProject.id); setShowNewProjectForm(true) }} className="inline-flex items-center gap-2 rounded-xl bg-slate-700/30 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700/50">
+                    <FaEdit className="text-sm" />
+                    <span>Edytuj projekt</span>
+                  </button>
+                  <button onClick={() => handleDuplicateProject(selectedProject)} className="inline-flex items-center gap-2 rounded-xl bg-slate-700/30 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700/50">
+                    <FaClone className="text-sm" />
+                    <span>Duplikuj</span>
+                  </button>
+                </div>
+              </div>
             </div>
           )}
 
