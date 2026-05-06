@@ -43,6 +43,7 @@ export default async function handler(req, res) {
       passwordHash: hashed,
       totpSecret,
       createdAt: Date.now(),
+      isSetupComplete: true,
     }
 
     // store admin record
@@ -51,7 +52,7 @@ export default async function handler(req, res) {
     // remove temporary session
     await redis.del(key)
 
-    res.status(200).json({ success: true })
+    res.status(200).json({ success: true, data: { success: true } })
   } catch (err) {
     console.error('set-password error', err)
     res.status(500).json({ error: 'Internal server error' })

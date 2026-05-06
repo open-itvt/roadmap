@@ -26,11 +26,14 @@ export default async function handler(req, res) {
 
     const payload = JSON.parse(raw)
     const secret = payload.totpSecret
+    const token = String(totpCode).trim()
+
     const verified = speakeasy.totp.verify({
       secret,
       encoding: 'base32',
-      token: String(totpCode),
-      window: 1,
+      token,
+      window: 2,
+      step: 30,
     })
 
     if (!verified) {
@@ -43,7 +46,7 @@ export default async function handler(req, res) {
     await redis.set(key, JSON.stringify(payload))
     await redis.expire(key, 60 * 15)
 
-    res.status(200).json({ success: true })
+    res.status(200).json({ success: true, data: { success: true } })
   } catch (err) {
     console.error('verify-totp error', err)
     res.status(500).json({ error: 'Internal server error' })

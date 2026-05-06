@@ -57,11 +57,12 @@ export default async function handler(req, res) {
       createdAt: Date.now(),
     })
     admin.updatedAt = Date.now()
+    admin.isSetupComplete = true
 
     await saveAdmin(admin)
     await redis.del(`webauthn:registration:${sessionId}`)
 
-    res.status(200).json({ success: true })
+    res.status(200).json({ success: true, data: { success: true } })
   } catch (error) {
     console.error('webauthn/register/complete error', error)
     res.status(500).json({ error: 'Internal server error' })

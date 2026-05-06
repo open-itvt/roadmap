@@ -30,11 +30,14 @@ export default async function handler(req, res) {
       return
     }
 
+    const token = String(totpCode).trim()
+
     const totpMatches = speakeasy.totp.verify({
       secret: admin.totpSecret,
       encoding: 'base32',
-      token: String(totpCode),
-      window: 1,
+      token,
+      window: 2,
+      step: 30,
     })
 
     if (!totpMatches) {

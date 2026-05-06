@@ -1,10 +1,9 @@
 import speakeasy from 'speakeasy'
-import { saveAdmin } from './_shared'
-import { handleCors } from '../_cors'
-import speakeasy from 'speakeasy'
 import qrcode from 'qrcode'
 import { v4 as uuidv4 } from 'uuid'
 import redis from '../upstashClient'
+import { handleCors } from '../_cors'
+import { getAllAdmins } from './_shared'
 
 export default async function handler(req, res) {
   if (handleCors(req, res)) return
@@ -15,6 +14,12 @@ export default async function handler(req, res) {
   }
 
   try {
+    const existingAdmins = await getAllAdmins()
+    if (existingAdmins.length > 0) {
+      res.status(403).json({ error: 'Admin account already exists' })
+      return
+    }
+
     const { username } = req.body || {}
     if (!username) {
       res.status(400).json({ error: 'username is required' })
@@ -42,7 +47,7 @@ export default async function handler(req, res) {
     // expire after 15 minutes
     await redis.expire(key, 60 * 15)
 
-    res.status(200).json({ sessionId, qrCode: qrCodeDataUrl })
+    res.status(200).json({ success: true, data: { sessionId, qrCode: qrCodeDataUrl } })
   } catch (err) {
     console.error('auth/init error', err)
     res.status(500).json({ error: 'Internal server error' })

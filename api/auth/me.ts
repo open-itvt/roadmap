@@ -33,7 +33,7 @@ export default async function handler(req, res) {
       data: {
         isAuthenticated: true,
         adminId: admin.username,
-        isSetupComplete: Boolean(admin.isSetupComplete ?? true),
+        isSetupComplete: Boolean(admin.isSetupComplete),
         adminExists,
       },
     })
