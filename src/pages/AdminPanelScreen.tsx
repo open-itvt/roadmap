@@ -151,16 +151,16 @@ function ManagementTabContent({
     <div className="space-y-6 pb-10">
       {/* Projects section */}
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-semibold text-white">Projekty</h2>
-            <p className="mt-1 text-sm text-slate-400">Zarządzaj wszystkimi projektami w roadmapie</p>
+            <h2 className="text-base sm:text-lg font-semibold text-white">Projekty</h2>
+            <p className="mt-0.5 text-xs sm:text-sm text-slate-400">Zarządzaj wszystkimi projektami</p>
           </div>
           <button
             onClick={() => resetProjectForm()}
-            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
+            className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400 flex-shrink-0"
           >
-            <FaPlus />
+            <FaPlus className="text-sm" />
             <span>Dodaj projekt</span>
           </button>
         </div>
@@ -170,7 +170,7 @@ function ManagementTabContent({
             <p className="text-slate-400">Brak projektów. Utwórz swój pierwszy projekt.</p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project, index) => {
               const stageCount = stageCountByProject(project.id)
               return (
@@ -183,8 +183,8 @@ function ManagementTabContent({
                       : 'border-slate-800/80 bg-[#0f141b] hover:border-slate-700/80'
                   } p-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)]`}
                 >
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <span className={`grid h-10 w-10 place-items-center rounded-xl bg-gradient-to-br ${PROJECT_GRADIENTS[index % PROJECT_GRADIENTS.length]} text-white shadow-lg shadow-black/20`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className={`grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-lg sm:rounded-xl bg-gradient-to-br ${PROJECT_GRADIENTS[index % PROJECT_GRADIENTS.length]} text-white shadow-lg shadow-black/20 flex-shrink-0`}>
                       {renderProjectIcon(project.icon)}
                     </span>
                     <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${
@@ -197,7 +197,7 @@ function ManagementTabContent({
                       {getProjectStatusLabel(project.status)}
                     </span>
                   </div>
-                  <h3 className="text-sm font-semibold text-white mb-1">{project.name}</h3>
+                  <h3 className="text-xs sm:text-sm font-semibold text-white mb-1 truncate">{project.name}</h3>
                   <p className="line-clamp-2 text-xs text-slate-400 mb-3">{project.description}</p>
 
                   <div className="mb-4 grid grid-cols-2 gap-2">
@@ -755,7 +755,7 @@ export function AdminPanelScreen() {
 
       {/* Main content */}
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-4xl px-4 py-4 sm:px-6 lg:px-8 lg:py-8">
+        <div className="mx-auto w-full max-w-4xl px-3 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-8">
           {/* Mobile top bar */}
           <div className="mb-4 flex items-start justify-between gap-3 lg:hidden">
             <button
@@ -790,10 +790,10 @@ export function AdminPanelScreen() {
           </div>
 
           {/* Tabs */}
-          <div className="mb-6 flex items-center gap-6 border-b border-slate-700/20 text-sm">
+          <div className="mb-4 sm:mb-6 flex items-center gap-4 sm:gap-6 border-b border-slate-700/20 text-xs sm:text-sm overflow-x-auto">
             <button
               onClick={() => setActiveTab('management')}
-              className={`relative pb-3 font-medium transition ${
+              className={`relative pb-3 font-medium transition whitespace-nowrap ${
                 activeTab === 'management'
                   ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
                   : 'text-slate-400 hover:text-slate-300'
@@ -803,7 +803,7 @@ export function AdminPanelScreen() {
             </button>
             <button
               onClick={() => setActiveTab('details')}
-              className={`relative pb-3 font-medium transition ${
+              className={`relative pb-3 font-medium transition whitespace-nowrap ${
                 activeTab === 'details'
                   ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
                   : 'text-slate-400 hover:text-slate-300'
@@ -813,7 +813,7 @@ export function AdminPanelScreen() {
             </button>
             <button
               onClick={() => setActiveTab('links')}
-              className={`relative pb-3 font-medium transition ${
+              className={`relative pb-3 font-medium transition whitespace-nowrap ${
                 activeTab === 'links'
                   ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
                   : 'text-slate-400 hover:text-slate-300'
@@ -823,7 +823,7 @@ export function AdminPanelScreen() {
             </button>
             <button
               onClick={() => setActiveTab('settings')}
-              className={`relative pb-3 font-medium transition ${
+              className={`relative pb-3 font-medium transition whitespace-nowrap ${
                 activeTab === 'settings'
                   ? 'text-violet-300 after:absolute after:inset-x-0 after:bottom-[-1px] after:h-[2px] after:rounded-full after:bg-violet-400'
                   : 'text-slate-400 hover:text-slate-300'
@@ -871,18 +871,18 @@ export function AdminPanelScreen() {
       </main>
 
       {showNewProjectForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-          <div className="w-full max-w-md rounded-[28px] border border-slate-700/30 bg-gradient-to-b from-[#101620] to-[#0b1118] p-8 shadow-2xl shadow-black/60">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold tracking-tight text-white">{projectFormMode === 'edit' ? 'Edytuj projekt' : 'Nowy projekt'}</h2>
-              <p className="mt-1 text-sm text-slate-400">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-[20px] sm:rounded-[28px] border border-slate-700/30 bg-gradient-to-b from-[#101620] to-[#0b1118] p-5 sm:p-8 shadow-2xl shadow-black/60">
+            <div className="mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-white">{projectFormMode === 'edit' ? 'Edytuj projekt' : 'Nowy projekt'}</h2>
+              <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">
                 {projectFormMode === 'edit' ? 'Zaktualizuj szczegóły projektu' : 'Utwórz nowy projekt w roadmapie'}
               </p>
             </div>
 
-            <form onSubmit={handleProjectFormSubmit} className="space-y-5">
+            <form onSubmit={handleProjectFormSubmit} className="space-y-4 sm:space-y-5">
               <div>
-                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
                   <span className="text-violet-300">●</span> Nazwa projektu
                 </label>
                 <input
@@ -890,35 +890,35 @@ export function AdminPanelScreen() {
                   value={newProjectData.name}
                   onChange={(e) => setNewProjectData({ ...newProjectData, name: e.target.value })}
                   placeholder="np. Aplikacja mobilna"
-                  className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                  className="w-full rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
                   <span className="text-violet-300">●</span> Opis
                 </label>
                 <textarea
                   value={newProjectData.description}
                   onChange={(e) => setNewProjectData({ ...newProjectData, description: e.target.value })}
                   placeholder="Opisz cel i zakres tego projektu..."
-                  className="w-full resize-none rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
-                  rows={3}
+                  className="w-full resize-none rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                  rows={2}
                 />
               </div>
 
               <div>
-                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
                   <span className="text-violet-300">●</span> Ikona / emoji
                 </label>
-                <div className="grid grid-cols-4 gap-2 sm:grid-cols-5">
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 sm:grid-cols-5">
                   {Object.keys(PROJECT_ICON_COMPONENTS).map((iconKey) => (
                     <button
                       key={iconKey}
                       type="button"
                       onClick={() => setNewProjectData({ ...newProjectData, icon: iconKey })}
-                      className={`flex h-10 items-center justify-center rounded-lg border transition ${
+                      className={`flex h-9 sm:h-10 items-center justify-center rounded-lg border text-sm sm:text-base transition ${
                         newProjectData.icon === iconKey
                           ? 'border-violet-400 bg-violet-500/20 text-violet-300'
                           : 'border-slate-700/30 bg-white/[0.03] text-slate-400 hover:border-slate-700/50 hover:bg-white/[0.05] hover:text-slate-300'
@@ -931,17 +931,17 @@ export function AdminPanelScreen() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-2 sm:gap-3 pt-1 sm:pt-2">
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
+                  className="flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
                 >
-                  {projectFormMode === 'edit' ? 'Zapisz zmiany' : 'Utwórz projekt'}
+                  {projectFormMode === 'edit' ? 'Zapisz' : 'Utwórz'}
                 </button>
                 <button
                   type="button"
                   onClick={closeProjectForm}
-                  className="flex-1 rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]"
+                  className="flex-1 rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]"
                 >
                   Anuluj
                 </button>
@@ -952,16 +952,16 @@ export function AdminPanelScreen() {
       )}
 
       {showNewStageForm && selectedProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-md">
-          <div className="w-full max-w-lg rounded-[28px] border border-slate-700/30 bg-gradient-to-b from-[#101620] to-[#0b1118] p-8 shadow-2xl shadow-black/60">
-            <div className="mb-6">
-              <h2 className="text-2xl font-bold tracking-tight text-white">{stageFormMode === 'edit' ? 'Edytuj etap' : 'Nowy etap'}</h2>
-              <p className="mt-1 text-sm text-slate-400">Projekt: <span className="font-medium text-violet-300">{selectedProject.name}</span></p>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-[20px] sm:rounded-[28px] border border-slate-700/30 bg-gradient-to-b from-[#101620] to-[#0b1118] p-5 sm:p-8 shadow-2xl shadow-black/60">
+            <div className="mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-white">{stageFormMode === 'edit' ? 'Edytuj etap' : 'Nowy etap'}</h2>
+              <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">Projekt: <span className="font-medium text-violet-300 truncate">{selectedProject.name}</span></p>
             </div>
 
-            <form onSubmit={handleStageFormSubmit} className="space-y-5">
+            <form onSubmit={handleStageFormSubmit} className="space-y-4 sm:space-y-5">
               <div>
-                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
                   <span className="text-violet-300">●</span> Nazwa etapu
                 </label>
                 <input
@@ -969,33 +969,33 @@ export function AdminPanelScreen() {
                   value={newStageData.name}
                   onChange={(e) => setNewStageData({ ...newStageData, name: e.target.value })}
                   placeholder="np. Implementacja"
-                  className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                  className="w-full rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
                   required
                 />
               </div>
 
               <div>
-                <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
                   <span className="text-violet-300">●</span> Opis
                 </label>
                 <textarea
                   value={newStageData.description}
                   onChange={(e) => setNewStageData({ ...newStageData, description: e.target.value })}
                   placeholder="Opisz co zostanie wykonane w tym etapie..."
-                  className="w-full resize-none rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
-                  rows={3}
+                  className="w-full resize-none rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                  rows={2}
                 />
               </div>
 
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                  <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
                     <span className="text-violet-300">●</span> Status
                   </label>
                   <select
                     value={newStageData.status}
                     onChange={(e) => setNewStageData({ ...newStageData, status: e.target.value as typeof newStageData.status })}
-                    className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
+                    className="w-full rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"
                   >
                     <option value="pending">Oczekujące</option>
                     <option value="in-progress">W trakcie</option>
@@ -1005,16 +1005,16 @@ export function AdminPanelScreen() {
                 </div>
 
                 <div>
-                  <label className="mb-2.5 flex items-center gap-2 text-sm font-semibold text-white">
+                  <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
                     <span className="text-violet-300">●</span> Ikona / skrót
                   </label>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
                     {['check', 'dot', '1', '2', '3', '4', '5'].map((option) => (
                       <button
                         key={option}
                         type="button"
                         onClick={() => setNewStageData({ ...newStageData, icon: option })}
-                        className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition ${
+                        className={`flex h-8 sm:h-9 w-8 sm:w-9 items-center justify-center rounded-lg border text-xs sm:text-sm font-medium transition ${
                           newStageData.icon === option
                             ? 'border-violet-400 bg-violet-500/20 text-violet-300'
                             : 'border-slate-700/30 bg-white/[0.03] text-slate-400 hover:border-slate-700/50 hover:bg-white/[0.05] hover:text-slate-300'
@@ -1028,17 +1028,17 @@ export function AdminPanelScreen() {
                 </div>
               </div>
 
-              <div className="flex gap-3 pt-2">
+              <div className="flex gap-2 sm:gap-3 pt-1 sm:pt-2">
                 <button
                   type="submit"
-                  className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
+                  className="flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
                 >
-                  {stageFormMode === 'edit' ? 'Zapisz zmiany' : 'Utwórz etap'}
+                  {stageFormMode === 'edit' ? 'Zapisz' : 'Utwórz'}
                 </button>
                 <button
                   type="button"
                   onClick={closeStageForm}
-                  className="flex-1 rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]"
+                  className="flex-1 rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]"
                 >
                   Anuluj
                 </button>
