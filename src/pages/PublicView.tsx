@@ -107,6 +107,101 @@ const SAMPLE_STAGES: Stage[] = [
   },
 ]
 
+const PUBLIC_ROADMAP_CACHE_KEY = 'roadmap-public-cache-v1'
+const PUBLIC_ROADMAP_REFRESH_INTERVAL_MS = 30_000
+
+type PublicRoadmapSnapshot = {
+  projects: Project[]
+  stagesByProjectId: Record<string, Stage[]>
+  loadedAt: number
+}
+
+let publicRoadmapCache: PublicRoadmapSnapshot | null = null
+
+function createSampleSnapshot(): PublicRoadmapSnapshot {
+  const sampleProjectId = SAMPLE_PROJECTS[0]?.id ?? ''
+  return {
+    projects: SAMPLE_PROJECTS,
+    stagesByProjectId: {
+      [sampleProjectId]: SAMPLE_STAGES.filter((stage) => stage.projectId === sampleProjectId),
+    },
+    loadedAt: Date.now(),
+  }
+}
+
+function readSnapshotFromStorage(): PublicRoadmapSnapshot | null {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  try {
+    const raw = window.sessionStorage.getItem(PUBLIC_ROADMAP_CACHE_KEY)
+    if (!raw) {
+      return null
+    }
+
+    const parsed = JSON.parse(raw) as PublicRoadmapSnapshot
+    if (!parsed || !Array.isArray(parsed.projects) || typeof parsed.stagesByProjectId !== 'object') {
+      return null
+    }
+
+    return parsed
+  } catch {
+    return null
+  }
+}
+
+function writeSnapshotToStorage(snapshot: PublicRoadmapSnapshot): void {
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    window.sessionStorage.setItem(PUBLIC_ROADMAP_CACHE_KEY, JSON.stringify(snapshot))
+  } catch {
+    // Ignore storage quota / serialization issues.
+  }
+}
+
+function getCachedSnapshot(): PublicRoadmapSnapshot | null {
+  return publicRoadmapCache ?? readSnapshotFromStorage()
+}
+
+async function loadProjectStages(projectId: string): Promise<Stage[]> {
+  const liveStages = await stagesApi.getByProjectId(projectId)
+
+  const stagesWithLinks = await Promise.all(
+    liveStages.map(async (stage) => {
+      try {
+        const links = await linksApi.getByStageId(projectId, stage.id)
+        return { ...stage, links }
+      } catch {
+        return { ...stage, links: [] }
+      }
+    })
+  )
+
+  return stagesWithLinks.sort((left, right) => left.order - right.order)
+}
+
+async function loadPublicRoadmapSnapshot(): Promise<PublicRoadmapSnapshot> {
+  const projects = await projectsApi.getAll()
+
+  if (projects.length === 0) {
+    return createSampleSnapshot()
+  }
+
+  const stageEntries = await Promise.all(
+    projects.map(async (project) => [project.id, await loadProjectStages(project.id)] as const)
+  )
+
+  return {
+    projects,
+    stagesByProjectId: Object.fromEntries(stageEntries),
+    loadedAt: Date.now(),
+  }
+}
+
 function getBuildDate(): string {
   const buildDate = (import.meta.env as Record<string, string | undefined>).VITE_BUILD_DATE
   if (buildDate) return buildDate
@@ -117,43 +212,61 @@ function getBuildDate(): string {
 export function PublicView() {
   const navigate = useNavigate()
   const { isAuthenticated, logout } = useAuth()
-  const [projects, setProjects] = useState<Project[]>([])
-  const [selectedProject, setSelectedProject] = useState<Project | null>(null)
+  const cachedSnapshot = getCachedSnapshot()
+  const [projects, setProjects] = useState<Project[]>(cachedSnapshot?.projects ?? [])
+  const [stagesByProjectId, setStagesByProjectId] = useState<Record<string, Stage[]>>(cachedSnapshot?.stagesByProjectId ?? {})
+  const [selectedProject, setSelectedProject] = useState<Project | null>(cachedSnapshot?.projects[0] ?? null)
   const [activeTab, setActiveTab] = useState<'roadmap' | 'details'>('roadmap')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [loading, setLoading] = useState(true)
+  const [loading, setLoading] = useState(!cachedSnapshot)
+  const [lastRefreshAt, setLastRefreshAt] = useState<number>(cachedSnapshot?.loadedAt ?? 0)
+
+  const applySnapshot = (snapshot: PublicRoadmapSnapshot) => {
+    publicRoadmapCache = snapshot
+    writeSnapshotToStorage(snapshot)
+    setProjects(snapshot.projects)
+    setStagesByProjectId(snapshot.stagesByProjectId)
+    setSelectedProject((current) => {
+      if (current) {
+        const matched = snapshot.projects.find((project) => project.id === current.id)
+        if (matched) {
+          return matched
+        }
+      }
+      return snapshot.projects[0] ?? null
+    })
+    setLastRefreshAt(snapshot.loadedAt)
+    setLoading(false)
+  }
 
   useEffect(() => {
-    const loadProjects = async () => {
-      try {
-        // Always attempt to fetch live data from API for public view
-        try {
-          const live = await projectsApi.getAll()
-          if (live && live.length > 0) {
-            setProjects(live)
-            setSelectedProject(live[0])
-            setLoading(false)
-            return
-          }
-          // If API returns empty list, fall back to sample data
-          console.warn('No projects returned from API, falling back to sample data')
-        } catch (err) {
-          console.warn('Failed to load live projects, falling back to sample', err)
-        }
+    let cancelled = false
 
-        // Fallback to sample data
-        setProjects(SAMPLE_PROJECTS)
-        setSelectedProject(SAMPLE_PROJECTS[0])
+    const refreshRoadmap = async () => {
+      try {
+        const snapshot = await loadPublicRoadmapSnapshot()
+        if (cancelled) {
+          return
+        }
+        applySnapshot(snapshot)
       } catch (error) {
-        console.error('Failed to load projects:', error)
-        setProjects(SAMPLE_PROJECTS)
-        setSelectedProject(SAMPLE_PROJECTS[0])
-      } finally {
-        setLoading(false)
+        console.error('Failed to load roadmap snapshot:', error)
+        if (!cancelled && !publicRoadmapCache) {
+          applySnapshot(createSampleSnapshot())
+        }
       }
     }
 
-    loadProjects()
+    void refreshRoadmap()
+
+    const intervalId = window.setInterval(() => {
+      void refreshRoadmap()
+    }, PUBLIC_ROADMAP_REFRESH_INTERVAL_MS)
+
+    return () => {
+      cancelled = true
+      window.clearInterval(intervalId)
+    }
   }, [])
 
   if (loading) {
@@ -297,10 +410,17 @@ export function PublicView() {
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Roadmapa</h1>
               <p className="mt-1 text-sm text-slate-400">Śledź postęp dla tego projektu</p>
             </div>
-            <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/6 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
-              <span>GitHub</span>
-              <FaExternalLinkAlt className="text-sm" />
-            </a>
+            <div className="flex items-center gap-3">
+              {lastRefreshAt ? (
+                <div className="hidden rounded-xl border border-white/6 bg-white/[0.04] px-3 py-2 text-xs text-slate-400 lg:block">
+                  Odświeżono {new Date(lastRefreshAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </div>
+              ) : null}
+              <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/6 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
+                <span>GitHub</span>
+                <FaExternalLinkAlt className="text-sm" />
+              </a>
+            </div>
           </div>
 
           {/* Project Selector Mobile */}
@@ -333,7 +453,7 @@ export function PublicView() {
           {/* Content */}
           {selectedProject ? (
             activeTab === 'roadmap' ? (
-              <RoadmapContent project={selectedProject} />
+              <RoadmapContent stages={stagesByProjectId[selectedProject.id] ?? []} />
             ) : (
               <DetailsContent project={selectedProject} />
             )
@@ -348,57 +468,7 @@ export function PublicView() {
   )
 }
 
-function RoadmapContent({ project }: { project: Project }) {
-  const [stages, setStages] = useState<Stage[]>([])
-  const [loading, setLoading] = useState(true)
-
-  useEffect(() => {
-    const loadStages = async () => {
-      try {
-        try {
-          const liveStages = await stagesApi.getByProjectId(project.id)
-          if (liveStages && liveStages.length > 0) {
-            const stagesWithLinks = await Promise.all(
-              liveStages.map(async (stage) => {
-                try {
-                  const links = await linksApi.getByStageId(project.id, stage.id)
-                  return { ...stage, links }
-                } catch {
-                  return { ...stage, links: [] }
-                }
-              })
-            )
-            setStages(stagesWithLinks.sort((a, b) => a.order - b.order))
-            return
-          }
-          console.warn('No stages returned from API, falling back to sample data')
-        } catch (err) {
-          console.warn('Failed to load live stages, falling back to sample', err)
-        }
-
-        // Fallback to sample data
-        const sampleStages = SAMPLE_STAGES.filter(s => s.projectId === project.id)
-        setStages(sampleStages.sort((a, b) => a.order - b.order))
-      } catch (error) {
-        console.error('Failed to load stages:', error)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadStages()
-  }, [project.id])
-
-  if (loading) {
-    return (
-      <div className="p-8">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-        </div>
-      </div>
-    )
-  }
-
+function RoadmapContent({ stages }: { stages: Stage[] }) {
   if (stages.length === 0) {
     return (
       <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-800/80 bg-white/[0.03]">

@@ -90,6 +90,78 @@ const SAMPLE_STAGES = [
         updatedAt: new Date().toISOString(),
     },
 ];
+  const PUBLIC_ROADMAP_CACHE_KEY = 'roadmap-public-cache-v1';
+  const PUBLIC_ROADMAP_REFRESH_INTERVAL_MS = 30000;
+  let publicRoadmapCache = null;
+  function createSampleSnapshot() {
+    var _a;
+    const sampleProjectId = (_a = SAMPLE_PROJECTS[0]) === null || _a === void 0 ? void 0 : _a.id;
+    return {
+      projects: SAMPLE_PROJECTS,
+      stagesByProjectId: {
+        [sampleProjectId !== null && sampleProjectId !== void 0 ? sampleProjectId : '']: SAMPLE_STAGES.filter((stage) => stage.projectId === sampleProjectId),
+      },
+      loadedAt: Date.now(),
+    };
+  }
+  function readSnapshotFromStorage() {
+    if (typeof window === 'undefined') {
+      return null;
+    }
+    try {
+      const raw = window.sessionStorage.getItem(PUBLIC_ROADMAP_CACHE_KEY);
+      if (!raw) {
+        return null;
+      }
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.projects) || typeof parsed.stagesByProjectId !== 'object') {
+        return null;
+      }
+      return parsed;
+    }
+    catch {
+      return null;
+    }
+  }
+  function writeSnapshotToStorage(snapshot) {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    try {
+      window.sessionStorage.setItem(PUBLIC_ROADMAP_CACHE_KEY, JSON.stringify(snapshot));
+    }
+    catch {
+      // Ignore storage quota / serialization issues.
+    }
+  }
+  function getCachedSnapshot() {
+    return publicRoadmapCache !== null && publicRoadmapCache !== void 0 ? publicRoadmapCache : readSnapshotFromStorage();
+  }
+  async function loadProjectStages(projectId) {
+    const liveStages = await endpoints_1.stagesApi.getByProjectId(projectId);
+    const stagesWithLinks = await Promise.all(liveStages.map(async (stage) => {
+      try {
+        const links = await endpoints_1.linksApi.getByStageId(projectId, stage.id);
+        return { ...stage, links };
+      }
+      catch {
+        return { ...stage, links: [] };
+      }
+    }));
+    return stagesWithLinks.sort((left, right) => left.order - right.order);
+  }
+  async function loadPublicRoadmapSnapshot() {
+    const projects = await endpoints_1.projectsApi.getAll();
+    if (projects.length === 0) {
+      return createSampleSnapshot();
+    }
+    const stageEntries = await Promise.all(projects.map(async (project) => [project.id, await loadProjectStages(project.id)]));
+    return {
+      projects,
+      stagesByProjectId: Object.fromEntries(stageEntries),
+      loadedAt: Date.now(),
+    };
+  }
 function getBuildDate() {
     const buildDate = import.meta.env.VITE_BUILD_DATE;
     if (buildDate)
@@ -99,43 +171,55 @@ function getBuildDate() {
 }
 function PublicView() {
     const [projects, setProjects] = (0, react_1.useState)([]);
-    const [selectedProject, setSelectedProject] = (0, react_1.useState)(null);
+  const [stagesByProjectId, setStagesByProjectId] = (0, react_1.useState)((getCachedSnapshot() === null || getCachedSnapshot() === void 0 ? void 0 : getCachedSnapshot().stagesByProjectId) || {});
+  const cachedSnapshot = getCachedSnapshot();
+  const [selectedProject, setSelectedProject] = (0, react_1.useState)((cachedSnapshot === null || cachedSnapshot === void 0 ? void 0 : cachedSnapshot.projects[0]) || null);
     const [activeTab, setActiveTab] = (0, react_1.useState)('roadmap');
     const [mobileMenuOpen, setMobileMenuOpen] = (0, react_1.useState)(false);
-    const [loading, setLoading] = (0, react_1.useState)(true);
+  const [loading, setLoading] = (0, react_1.useState)(!cachedSnapshot);
+  const [lastRefreshAt, setLastRefreshAt] = (0, react_1.useState)((cachedSnapshot === null || cachedSnapshot === void 0 ? void 0 : cachedSnapshot.loadedAt) || 0);
+  const applySnapshot = (snapshot) => {
+    publicRoadmapCache = snapshot;
+    writeSnapshotToStorage(snapshot);
+    setProjects(snapshot.projects);
+    setStagesByProjectId(snapshot.stagesByProjectId);
+    setSelectedProject((current) => {
+      if (current) {
+        const matched = snapshot.projects.find((project) => project.id === current.id);
+        if (matched) {
+          return matched;
+        }
+      }
+      return snapshot.projects[0] || null;
+    });
+    setLastRefreshAt(snapshot.loadedAt);
+    setLoading(false);
+  };
     (0, react_1.useEffect)(() => {
-        const loadProjects = async () => {
+    let cancelled = false;
+    const refreshRoadmap = async () => {
             try {
-                // Always attempt to fetch live data from API for public view
-                try {
-                  const live = await endpoints_1.projectsApi.getAll();
-                  if (live && live.length > 0) {
-                    setProjects(live);
-                    setSelectedProject(live[0]);
-                    setLoading(false);
-                    return;
-                  }
-                  // If API returns empty list, fall back to sample data
-                  console.warn('No projects returned from API, falling back to sample data');
+        const snapshot = await loadPublicRoadmapSnapshot();
+        if (cancelled) {
+          return;
                 }
-                catch (err) {
-                  console.warn('Failed to load live projects, falling back to sample', err);
-                }
-
-                // Fallback to sample data
-                setProjects(SAMPLE_PROJECTS);
-                setSelectedProject(SAMPLE_PROJECTS[0]);
+        applySnapshot(snapshot);
             }
             catch (error) {
-                console.error('Failed to load projects:', error);
-                setProjects(SAMPLE_PROJECTS);
-                setSelectedProject(SAMPLE_PROJECTS[0]);
-            }
-            finally {
-                setLoading(false);
+        console.error('Failed to load roadmap snapshot:', error);
+        if (!cancelled && !publicRoadmapCache) {
+          applySnapshot(createSampleSnapshot());
+        }
             }
         };
-        loadProjects();
+    void refreshRoadmap();
+    const intervalId = window.setInterval(() => {
+      void refreshRoadmap();
+    }, PUBLIC_ROADMAP_REFRESH_INTERVAL_MS);
+    return () => {
+      cancelled = true;
+      window.clearInterval(intervalId);
+    };
     }, []);
     if (loading) {
         return (<div className="flex items-center justify-center min-h-screen bg-slate-950">
@@ -222,10 +306,15 @@ function PublicView() {
               <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Roadmapa</h1>
               <p className="mt-1 text-sm text-slate-400">Śledź postęp dla tego projektu</p>
             </div>
-            <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/6 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
-              <span>GitHub</span>
-              <fa_1.FaExternalLinkAlt className="text-sm"/>
-            </a>
+            <div className="flex items-center gap-3">
+              {lastRefreshAt ? (<div className="hidden rounded-xl border border-white/6 bg-white/[0.04] px-3 py-2 text-xs text-slate-400 lg:block">
+                  Odświeżono {new Date(lastRefreshAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+                </div>) : null}
+              <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/6 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
+                <span>GitHub</span>
+                <fa_1.FaExternalLinkAlt className="text-sm"/>
+              </a>
+            </div>
           </div>
 
           {/* Project Selector Mobile */}
@@ -280,50 +369,14 @@ function RoadmapContent({ project }) {
             finally {
                 setLoading(false);
             }
-        };
+                    stages={stagesByProjectId[selectedProject.id] || []}/>) : (<DetailsContent project={selectedProject}/>)) : (<div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-800/80 bg-white/[0.03]">
         loadStages();
     }, [project.id]);
     if (loading) {
         return (<div className="p-8">
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
-        </div>
-      </div>);
-    }
-    if (stages.length === 0) {
-        return (<div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-800/80 bg-white/[0.03]">
-        <p className="text-slate-400">Brak etapów dla tego projektu</p>
-      </div>);
-    }
-    return (<div className="space-y-6 pb-10">
-      {/* Roadmap Timeline */}
-      <div className="space-y-4">
-        {stages.map((stage, index) => (<div key={stage.id}>
-            <div className="flex gap-4">
-              {/* Timeline dot */}
-              <div className="flex flex-col items-center">
-                <div className={`grid h-12 w-12 place-items-center rounded-full text-lg font-semibold ring-1 ring-white/10 ${stage.status === 'completed' ? 'bg-green-600 text-white' :
-                stage.status === 'in-progress' ? 'bg-amber-600 text-white' :
-                    stage.status === 'blocked' ? 'bg-orange-500 text-white' :
-                        'bg-slate-700 text-slate-400'}`}>
-                  {stage.status === 'completed' ? (<fa_1.FaCheckCircle />) : stage.status === 'in-progress' ? (<fa_1.FaCircle />) : stage.status === 'blocked' ? (<fa_1.FaExclamationTriangle />) : (
-            // fallback: show stage.icon if it's a short string/number, otherwise a generic icon
-            (typeof stage.icon === 'string' && stage.icon.length <= 2) ? stage.icon : <fa_1.FaBullseye />)}
-                </div>
-                {index < stages.length - 1 && (<div className="w-px h-12 bg-gradient-to-b from-white/25 to-white/5 my-2"></div>)}
-              </div>
-
-              {/* Stage card */}
-              <div className="flex-1 pb-4">
-                <div className="rounded-2xl border-1 border-slate-800/80 bg-[#0f141b] p-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)] transition hover:border-slate-700/80">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold mb-1">{stage.name}</h3>
-                      <p className="text-slate-400 text-sm mb-2">{stage.description}</p>
-                      {stage.links && stage.links.length > 0 && (<div className="mb-2">
-                          <div className="flex flex-wrap gap-2">
-                            {stage.links.map((link) => (<a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-slate-800/50 text-slate-300 text-xs font-medium hover:bg-slate-700/50 transition" title={link.description || link.title}>
-                                <fa_1.FaExternalLinkAlt className="text-xs"/>
+      function RoadmapContent({ stages }) {
                                 {link.title}
                               </a>))}
                           </div>
