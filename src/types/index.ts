@@ -5,6 +5,7 @@ export interface Project {
   name: string
   description: string
   icon: string
+  projectLinkUrl?: string
   privateNotes?: string
   isLocked?: boolean
   status: 'active' | 'completed' | 'archived'

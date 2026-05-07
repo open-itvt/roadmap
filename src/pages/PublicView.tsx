@@ -249,7 +249,7 @@ export function PublicView() {
   const [lastRefreshAt, setLastRefreshAt] = useState<number>(cachedSnapshot?.loadedAt ?? 0)
   const selectedProjectStages = selectedProject ? stagesByProjectId[selectedProject.id] ?? [] : []
   const selectedProjectLinks = selectedProject ? getProjectGitHubLinks(selectedProjectStages) : []
-  const primaryProjectLink = selectedProjectLinks[0]?.url ?? '#'
+  const primaryProjectLink = selectedProject?.projectLinkUrl ?? selectedProjectLinks[0]?.url ?? '#'
 
   const applySnapshot = (snapshot: PublicRoadmapSnapshot) => {
     publicRoadmapCache = snapshot

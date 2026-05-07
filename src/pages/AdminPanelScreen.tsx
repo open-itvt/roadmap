@@ -530,6 +530,7 @@ export function AdminPanelScreen() {
     name: '',
     description: '',
     icon: 'rocket',
+    projectLinkUrl: '',
     privateNotes: '',
     priority: 'medium' as Project['priority'],
     progress: 0,
@@ -957,6 +958,7 @@ export function AdminPanelScreen() {
         name: project.name,
         description: project.description,
         icon: project.icon,
+        projectLinkUrl: project.projectLinkUrl || '',
           privateNotes: project.privateNotes || '',
         priority: project.priority,
         progress: project.progress,
@@ -974,6 +976,7 @@ export function AdminPanelScreen() {
         name: '',
         description: '',
           icon: 'rocket',
+        projectLinkUrl: '',
           privateNotes: '',
         priority: 'medium' as Project['priority'],
         progress: 0,
@@ -1506,6 +1509,17 @@ export function AdminPanelScreen() {
                       onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })}
                       className="w-full resize-none rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
                       rows={3}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Link projektu (GitHub)</label>
+                    <input
+                      type="text"
+                      value={editingProject.projectLinkUrl ?? ''}
+                      onChange={(e) => setEditingProject({ ...editingProject, projectLinkUrl: e.target.value })}
+                      placeholder="https://github.com/..."
+                      className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
                     />
                   </div>
 
