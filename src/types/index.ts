@@ -24,6 +24,7 @@ export interface Link {
   title: string
   description?: string
   type: 'github' | 'demo' | 'docs' | 'other'
+  stageId: string
   createdAt: string
   updatedAt: string
 }

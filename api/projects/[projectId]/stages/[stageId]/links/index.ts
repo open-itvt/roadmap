@@ -1,6 +1,6 @@
 import { getLinksByStageId, createLink, getStageById, getProjectById } from '../../../../_shared'
 
-export default async function handler(req, res) {
+export default async function handler(req: any, res: any) {
   const { projectId, stageId } = req.query
 
   if (!projectId || !stageId) {
@@ -9,21 +9,20 @@ export default async function handler(req, res) {
   }
 
   try {
-    const authHeader = req.headers.authorization as string | undefined
-    const project = await getProjectById(String(projectId), authHeader)
+    const project = await getProjectById(String(projectId))
     if (!project) {
       res.status(404).json({ error: 'Project not found' })
       return
     }
 
-    const stage = await getStageById(String(stageId), authHeader)
+    const stage = await getStageById(String(stageId))
     if (!stage || stage.projectId !== String(projectId)) {
       res.status(404).json({ error: 'Stage not found' })
       return
     }
 
     if (req.method === 'GET') {
-      const links = await getLinksByStageId(String(stageId), authHeader)
+      const links = await getLinksByStageId(String(stageId))
       res.status(200).json({ success: true, data: links })
       return
     }
@@ -35,16 +34,12 @@ export default async function handler(req, res) {
         return
       }
 
-      const newLink = await createLink(
-        String(stageId),
-        {
-          url,
-          title,
-          description: description || '',
-          type: type || 'other',
-        },
-        authHeader,
-      )
+      const newLink = await createLink(String(stageId), {
+        url,
+        title,
+        description: description || '',
+        type: type || 'other',
+      })
       res.status(201).json({ success: true, data: newLink })
       return
     }
