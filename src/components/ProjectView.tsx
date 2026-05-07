@@ -15,7 +15,7 @@ import {
 import { projectsApi, stagesApi } from '@/api/endpoints'
 import type { Project, Stage } from '@/types'
 
-const PROJECT_ICON_COMPONENTS: Record<string, any> = {
+const PROJECT_ICON_COMPONENTS: Record<string, React.ComponentType> = {
   rocket: FaRocket,
   cogs: FaCogs,
   mobile: FaMobileAlt,

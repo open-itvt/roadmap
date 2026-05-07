@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   FaBars,
   FaChevronDown,
@@ -22,6 +22,7 @@ import { renderProjectIcon, renderStageIcon, normalizeProjectIconInput, PROJECT_
 import {
   DndContext,
   closestCenter,
+  DragEndEvent,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -208,8 +209,8 @@ interface ManagementTabContentProps {
   editingStage: Stage | null
   setEditingStage: (stage: Stage | null) => void
   handleSaveStageChanges: () => Promise<void>
-  sensors: any
-  handleDragEnd: (event: any) => void
+  sensors: any[]
+  handleDragEnd: (event: DragEndEvent) => void
   selectedStage: Stage | null
   setSelectedStage: (stage: Stage) => void
 }
@@ -569,10 +570,10 @@ export function AdminPanelScreen() {
     })
   )
 
-  const handleDragEnd = (event: any) => {
+  const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
 
-    if (active.id !== over.id) {
+    if (over && active.id !== over.id) {
       const oldIndex = selectedProjectStages.findIndex((stage) => stage.id === active.id)
       const newIndex = selectedProjectStages.findIndex((stage) => stage.id === over.id)
 
@@ -596,17 +597,13 @@ export function AdminPanelScreen() {
   }
 
   useEffect(() => {
-    void loadProjects()
-  }, [])
-
-  useEffect(() => {
     if (selectedProject) {
       void loadStages(selectedProject.id)
       setEditingProject(selectedProject)
     }
   }, [selectedProject])
 
-  const loadProjects = async () => {
+  const loadProjects = useCallback(async () => {
     try {
       const data = await projectsApi.getAll()
       setProjects(data)
@@ -618,7 +615,11 @@ export function AdminPanelScreen() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [selectedProject])
+
+  useEffect(() => {
+    void loadProjects()
+  }, [loadProjects])
 
   const loadStages = async (projectId: string) => {
     try {

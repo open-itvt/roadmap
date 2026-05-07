@@ -43,8 +43,8 @@ export function LoginPage() {
     try {
       await login(username, password, totpCode)
       navigate('/roadmap-manage', { replace: true })
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Login failed. Please try again.')
+    } catch (err: unknown) {
+      setError((err as any)?.response?.data?.error || 'Login failed. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -65,7 +65,7 @@ export function LoginPage() {
           timeout: startResponse.timeout,
           userVerification: startResponse.userVerification as UserVerificationRequirement,
         },
-      }) as any
+      }) as PublicKeyCredential
 
       if (!credential) {
         throw new Error('WebAuthn authentication cancelled')
@@ -88,8 +88,8 @@ export function LoginPage() {
 
       localStorage.setItem('sessionToken', response.sessionToken)
       navigate('/roadmap-manage', { replace: true })
-    } catch (err: any) {
-      setError(err.message || 'WebAuthn authentication failed')
+    } catch (err: unknown) {
+      setError((err as Error)?.message || 'WebAuthn authentication failed')
     } finally {
       setLoading(false)
     }

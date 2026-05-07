@@ -134,8 +134,8 @@ export function SetupPage() {
         qrCode: response.qrCode,
       })
       navigate('/auth/setup/2fa', { replace: true })
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to initialize authentication')
+    } catch (err: unknown) {
+      setError((err as any)?.response?.data?.error || 'Failed to initialize authentication')
     } finally {
       setLoading(false)
     }
@@ -151,8 +151,8 @@ export function SetupPage() {
       await authApi.verifyTotp(currentSessionId, totpCode)
       updateSetupState({ step: 'pass' })
       navigate('/auth/setup/pass', { replace: true })
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Invalid TOTP code')
+    } catch (err: unknown) {
+      setError((err as any)?.response?.data?.error || 'Invalid TOTP code')
     } finally {
       setLoading(false)
     }
@@ -174,8 +174,8 @@ export function SetupPage() {
       await authApi.setPassword(currentSessionId, password)
       clearSetupState()
       navigate('/auth/login', { replace: true })
-    } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to set password')
+    } catch (err: unknown) {
+      setError((err as any)?.response?.data?.error || 'Failed to set password')
     } finally {
       setLoading(false)
     }

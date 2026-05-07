@@ -57,7 +57,7 @@ export interface WebAuthnStartResponse {
 
 export interface WebAuthnVerifyRequest {
   sessionId: string
-  response: any // Credential response from browser
+  response: unknown // Credential response from browser
 }
 
 export const authApi = {
@@ -139,7 +139,7 @@ export const authApi = {
   },
 
   // WebAuthn: Complete registration
-  webAuthnCompleteRegistration: async (sessionId: string, response: any): Promise<{ success: boolean }> => {
+  webAuthnCompleteRegistration: async (sessionId: string, response: unknown): Promise<{ success: boolean }> => {
     const { data } = await apiClient.post<ApiResponse<{ success: boolean }>>('/api/auth/webauthn/register/complete', {
       sessionId,
       response,
@@ -154,7 +154,7 @@ export const authApi = {
   },
 
   // WebAuthn: Complete authentication
-  webAuthnCompleteAuth: async (sessionId: string, response: any): Promise<LoginResponse> => {
+  webAuthnCompleteAuth: async (sessionId: string, response: unknown): Promise<LoginResponse> => {
     const { data } = await apiClient.post<ApiResponse<LoginResponse>>('/api/auth/webauthn/auth/complete', {
       sessionId,
       response,

@@ -33,7 +33,7 @@ export function DemoPage() {
     }
 
     void runDemo()
-  }, [])
+  }, [checkAuth])
 
   if (!ready) {
     return (
