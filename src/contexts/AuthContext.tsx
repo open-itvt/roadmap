@@ -15,6 +15,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated: false,
     loading: true,
     adminExists: false,
+    hasPasskey: false,
   })
 
   // Check authentication on mount
@@ -27,6 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           adminId: auth.adminId,
           isSetupComplete: auth.isSetupComplete,
           adminExists: auth.adminExists ?? false,
+          hasPasskey: (auth as any).hasPasskey ?? false,
           loading: false,
         })
       } catch (error) {
@@ -78,6 +80,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         adminId: auth.adminId,
         isSetupComplete: auth.isSetupComplete,
         adminExists: auth.adminExists ?? false,
+        hasPasskey: (auth as any).hasPasskey ?? false,
         loading: false,
       })
     } catch (error) {

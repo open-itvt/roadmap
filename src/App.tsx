@@ -31,7 +31,7 @@ function SetupRoute({ children }: { children: ReactNode }) {
 }
 
 function HomeRoute() {
-  const { isAuthenticated, loading } = useAuth()
+  const { loading } = useAuth()
 
   if (loading) {
     return (
@@ -42,10 +42,6 @@ function HomeRoute() {
         </div>
       </div>
     )
-  }
-
-  if (isAuthenticated) {
-    return <Navigate to="/roadmap-manage" replace />
   }
 
   return <PublicView />

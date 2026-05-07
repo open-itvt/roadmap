@@ -1,7 +1,9 @@
 import redis from '../_upstashClient.js'
 import { handleCors } from '../_cors.js'
 import { getProjectsFromRedis, saveProjectsToRedis, saveStagestoRedis } from '../projects/_shared.js'
-import type { Project, Stage } from '@/types'
+
+type Project = any
+type Stage = any
 
 const SAMPLE_PROJECT: Project = {
   id: 'mobile-app-1',
@@ -87,8 +89,39 @@ const SAMPLE_STAGES: Stage[] = [
 ]
 
 function getRouteSegments(req: any): string[] {
-  const rawPath = req.query.path ?? req.query['...path']
-  return Array.isArray(rawPath) ? rawPath : rawPath ? [rawPath] : []
+  const query = req?.query || {}
+  const rawPath =
+    query.path ??
+    query['...path'] ??
+    query['[...path]'] ??
+    query.pathSegments
+
+  if (Array.isArray(rawPath)) {
+    return rawPath
+      .map((part) => String(part).trim())
+      .filter(Boolean)
+  }
+
+  if (typeof rawPath === 'string' && rawPath.trim()) {
+    return rawPath
+      .split('/')
+      .map((part) => part.trim())
+      .filter(Boolean)
+  }
+
+  const fallbackUrl = String(req?.url || '')
+  const pathname = fallbackUrl.split('?')[0] || ''
+  const base = '/api/admin/'
+
+  if (pathname.startsWith(base)) {
+    return pathname
+      .slice(base.length)
+      .split('/')
+      .map((part) => decodeURIComponent(part).trim())
+      .filter(Boolean)
+  }
+
+  return []
 }
 
 export default async function handler(req: any, res: any) {

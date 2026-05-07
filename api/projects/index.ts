@@ -1,7 +1,9 @@
 import {
   getProjectsFromRedis,
   createProject,
-} from './_shared'
+  duplicateProjectWithRelations,
+  getProjectById,
+} from './_shared.js'
 
 export default async function handler(req: any, res: any) {
   try {
@@ -12,13 +14,13 @@ export default async function handler(req: any, res: any) {
     }
 
     if (req.method === 'POST') {
-      const { name, description, icon, status, priority, teamSize, technologies, goals } = req.body
+      const { name, description, icon, status, priority, teamSize, technologies, goals, duplicateFromProjectId } = req.body
       if (!name || !description) {
         res.status(400).json({ error: 'name and description are required' })
         return
       }
 
-      const newProject = await createProject({
+      const createPayload = {
         name,
         description,
         icon: icon || '📱',
@@ -30,7 +32,19 @@ export default async function handler(req: any, res: any) {
         teamSize: teamSize || 0,
         technologies: technologies || [],
         goals: goals || [],
-      })
+      }
+
+      if (duplicateFromProjectId) {
+        const sourceProject = await getProjectById(String(duplicateFromProjectId))
+        if (!sourceProject) {
+          res.status(404).json({ error: 'Source project not found' })
+          return
+        }
+      }
+
+      const newProject = duplicateFromProjectId
+        ? await duplicateProjectWithRelations(createPayload, String(duplicateFromProjectId))
+        : await createProject(createPayload)
 
       res.status(201).json({ success: true, data: newProject })
       return

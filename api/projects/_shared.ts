@@ -1,6 +1,9 @@
 import redis from '../_upstashClient.js'
 import { v4 as uuid } from 'uuid'
-import type { Project, Stage, Link } from '@/types'
+
+type Project = any
+type Stage = any
+type Link = any
 
 export async function getProjectsFromRedis(): Promise<Project[]> {
   try {
@@ -33,6 +36,56 @@ export async function createProject(project: Omit<Project, 'id' | 'createdAt' | 
   projects.push(newProject)
   await saveProjectsToRedis(projects)
   return newProject
+}
+
+export async function duplicateProjectWithRelations(
+  project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>,
+  sourceProjectId?: string,
+): Promise<Project> {
+  const createdProject = await createProject(project)
+
+  if (!sourceProjectId) {
+    return createdProject
+  }
+
+  const [allStages, allLinks] = await Promise.all([getStagesFromRedis(), getLinksFromRedis()])
+  const sourceStages = allStages
+    .filter((stage) => stage.projectId === sourceProjectId)
+    .sort((left, right) => (left.order || 0) - (right.order || 0))
+
+  if (sourceStages.length === 0) {
+    return createdProject
+  }
+
+  const stageIdMap = new Map<string, string>()
+  const createdStages = sourceStages.map((stage, index) => {
+    const newStageId = uuid()
+    stageIdMap.set(stage.id, newStageId)
+
+    return {
+      ...stage,
+      id: newStageId,
+      projectId: createdProject.id,
+      order: index + 1,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }
+  })
+
+  const clonedLinks = allLinks
+    .filter((link) => stageIdMap.has(link.stageId))
+    .map((link) => ({
+      ...link,
+      id: uuid(),
+      stageId: stageIdMap.get(link.stageId) as string,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    }))
+
+  await saveStagestoRedis([...allStages.filter((stage) => stage.projectId !== sourceProjectId), ...createdStages])
+  await saveLinksToRedis([...allLinks.filter((link) => !stageIdMap.has(link.stageId)), ...clonedLinks])
+
+  return createdProject
 }
 
 export async function updateProject(id: string, updates: Partial<Project>): Promise<Project | null> {

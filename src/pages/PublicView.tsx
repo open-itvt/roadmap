@@ -13,7 +13,10 @@ import {
   FaCheckCircle,
   FaCircle,
   FaExclamationTriangle,
+  FaCogs,
 } from 'react-icons/fa'
+import { useNavigate } from 'react-router-dom'
+import { useAuth } from '@/contexts/AuthContext'
 import { renderProjectIcon } from '@/utils/icons'
 import type { Project, Stage } from '@/types'
 import { projectsApi, stagesApi } from '@/api/endpoints'
@@ -112,6 +115,8 @@ function getBuildDate(): string {
 }
 
 export function PublicView() {
+  const navigate = useNavigate()
+  const { isAuthenticated, logout } = useAuth()
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [activeTab, setActiveTab] = useState<'roadmap' | 'details'>('roadmap')
@@ -185,6 +190,30 @@ export function PublicView() {
             ×
           </button>
         </div>
+        {isAuthenticated && (
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={() => {
+                navigate('/roadmap-manage')
+                setMobileMenuOpen(false)
+              }}
+              className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium transition"
+            >
+              <FaCogs className="w-4 h-4" />
+              <span>Admin Panel</span>
+            </button>
+            <button
+              onClick={async () => {
+                await logout()
+                navigate('/')
+                setMobileMenuOpen(false)
+              }}
+              className="flex-1 px-3 py-2 rounded-lg bg-slate-700/50 hover:bg-slate-700 text-slate-200 text-sm font-medium transition"
+            >
+              Logout
+            </button>
+          </div>
+        )}
       </div>
 
       <div className="px-4 py-3 text-xs font-semibold uppercase tracking-[0.22em] text-slate-500">Projekty</div>

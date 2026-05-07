@@ -44,7 +44,9 @@ export interface Stage {
 }
 
 // Type aliases for creation payloads (excluding auto-generated fields)
-export type ProjectCreatePayload = Omit<Project, 'id' | 'createdAt' | 'updatedAt'>
+export type ProjectCreatePayload = Omit<Project, 'id' | 'createdAt' | 'updatedAt'> & {
+  duplicateFromProjectId?: string
+}
 export type StageCreatePayload = Omit<Stage, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>
 
 export interface AdminUser {
@@ -81,6 +83,7 @@ export interface AuthState {
   adminId?: string
   isSetupComplete?: boolean
   adminExists?: boolean
+  hasPasskey?: boolean
   loading: boolean
 }
 

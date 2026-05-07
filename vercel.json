@@ -1,12 +1,96 @@
 {
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist",
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/admin/*.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/auth/*.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/projects/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/projects/*/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/projects/*/stages/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/projects/*/stages/reorder.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/projects/*/stages/*/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/projects/*/stages/*/links/index.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/projects/*/stages/*/links/*.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
   "routes": [
+    {
+      "src": "^/api/auth/bypass-tmp$",
+      "dest": "/api/auth/bypass-tmp.ts"
+    },
+    {
+      "src": "^/api/auth(?:/(.*))?$",
+      "dest": "/api/auth/[...path].ts?path=$1"
+    },
+    {
+      "src": "^/api/admin(?:/(.*))?$",
+      "dest": "/api/admin/[...path].ts?path=$1"
+    },
+    {
+      "src": "^/api/projects$",
+      "dest": "/api/projects/index.ts"
+    },
+    {
+      "src": "^/api/projects/([^/]+)/stages/reorder$",
+      "dest": "/api/projects/[projectId]/stages/reorder.ts?projectId=$1"
+    },
+    {
+      "src": "^/api/projects/([^/]+)/stages/([^/]+)/links/([^/]+)$",
+      "dest": "/api/projects/[projectId]/stages/[stageId]/links/[linkId].ts?projectId=$1&stageId=$2&linkId=$3"
+    },
+    {
+      "src": "^/api/projects/([^/]+)/stages/([^/]+)/links$",
+      "dest": "/api/projects/[projectId]/stages/[stageId]/links/index.ts?projectId=$1&stageId=$2"
+    },
+    {
+      "src": "^/api/projects/([^/]+)/stages/([^/]+)$",
+      "dest": "/api/projects/[projectId]/stages/[stageId]/index.ts?projectId=$1&stageId=$2"
+    },
+    {
+      "src": "^/api/projects/([^/]+)/stages$",
+      "dest": "/api/projects/[projectId]/stages/index.ts?projectId=$1"
+    },
+    {
+      "src": "^/api/projects/([^/]+)$",
+      "dest": "/api/projects/[projectId]/index.ts?projectId=$1"
+    },
     {
       "handle": "filesystem"
     },
     {
-      "src": "^/(.*)$",
+      "src": "^/(?!api(?:/|$))(.*)$",
       "dest": "/index.html"
     }
   ]
