@@ -6,6 +6,7 @@ export interface Project {
   description: string
   icon: string
   privateNotes?: string
+  isLocked?: boolean
   status: 'active' | 'completed' | 'archived'
   priority: 'high' | 'medium' | 'low'
   progress: number

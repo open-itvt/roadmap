@@ -7,6 +7,7 @@ import {
   FaCogs,
   FaEdit,
   FaGlobe,
+  FaLock,
   FaInfoCircle,
   FaListUl,
   FaPlus,
@@ -84,6 +85,7 @@ interface SortableStageItemProps {
   index: number
   selectedStage: Stage | null
   editingStage: Stage | null
+  canDeleteStage: boolean
   setSelectedStage: (stage: Stage) => void
   setEditingStage: (stage: Stage | null) => void
   handleDeleteStage: (id: string) => Promise<void>
@@ -94,6 +96,7 @@ function SortableStageItem({
   index,
   selectedStage,
   editingStage,
+  canDeleteStage,
   setSelectedStage,
   setEditingStage,
   handleDeleteStage,
@@ -180,17 +183,19 @@ function SortableStageItem({
           >
             <FaListUl className="text-xs" />
           </button>
-          <button
-            type="button"
-            className="rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10"
-            onClick={(e) => {
-              e.stopPropagation()
-              void handleDeleteStage(stage.id)
-            }}
-            title="Usuń etap"
-          >
-            <FaTrashAlt className="text-xs" />
-          </button>
+          {canDeleteStage && (
+            <button
+              type="button"
+              className="rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10"
+              onClick={(e) => {
+                e.stopPropagation()
+                void handleDeleteStage(stage.id)
+              }}
+              title="Usuń etap"
+            >
+              <FaTrashAlt className="text-xs" />
+            </button>
+          )}
         </div>
       </div>
     </div>
@@ -488,6 +493,7 @@ function ManagementTabContent({
                     index={index}
                     selectedStage={selectedStage}
                     editingStage={editingStage}
+                    canDeleteStage={!selectedProject?.isLocked}
                     setSelectedStage={setSelectedStage}
                     setEditingStage={setEditingStage}
                     handleDeleteStage={handleDeleteStage}
@@ -1047,6 +1053,7 @@ export function AdminPanelScreen() {
   const handleDeleteStage = async (stageId: string) => {
     if (!window.confirm('Czy jesteś tego pewien?')) return
     if (!selectedProject) return
+    if (selectedProject.isLocked) return
     try {
       await stagesApi.delete(selectedProject.id, stageId)
       setStages(stages.filter((stage) => stage.id !== stageId))
@@ -1063,6 +1070,18 @@ export function AdminPanelScreen() {
       setProjects(projects.map((p) => (p.id === updated.id ? updated : p)))
     } catch (error) {
       console.error('Failed to save project:', error)
+    }
+  }
+
+  const handleLockProject = async () => {
+    if (!selectedProject || selectedProject.isLocked) return
+    try {
+      const updated = await projectsApi.update(selectedProject.id, { isLocked: true })
+      setSelectedProject(updated)
+      setProjects(projects.map((project) => (project.id === updated.id ? updated : project)))
+      setEditingProject(updated)
+    } catch (error) {
+      console.error('Failed to lock project:', error)
     }
   }
 
@@ -1643,6 +1662,12 @@ export function AdminPanelScreen() {
                     <p className="text-sm text-white capitalize">{selectedProject.priority === 'high' ? 'Wysoki' : selectedProject.priority === 'medium' ? 'Średni' : 'Niski'}</p>
                   </div>
                 </div>
+                {selectedProject.isLocked && (
+                  <div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-700/30 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300">
+                    <FaLock className="text-slate-400" />
+                    <span>Projekt zablokowany</span>
+                  </div>
+                )}
               </div>
               <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
                 <h4 className="text-sm font-semibold text-slate-300 mb-3">Szybkie akcje</h4>
@@ -1655,10 +1680,18 @@ export function AdminPanelScreen() {
                     <FaClone className="text-sm" />
                     <span>Duplikuj</span>
                   </button>
-                  <button onClick={() => handleDeleteProject(selectedProject.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/20 hover:border-red-500/30">
-                    <FaTrashAlt className="text-sm" />
-                    <span>Usuń projekt</span>
-                  </button>
+                  {!selectedProject.isLocked && (
+                    <button onClick={handleLockProject} className="inline-flex items-center gap-2 rounded-xl border border-slate-600/40 bg-slate-700/20 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-500/60 hover:bg-slate-700/40">
+                      <FaLock className="text-sm" />
+                      <span>Zablokuj</span>
+                    </button>
+                  )}
+                  {!selectedProject.isLocked && (
+                    <button onClick={() => handleDeleteProject(selectedProject.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/20 hover:border-red-500/30">
+                      <FaTrashAlt className="text-sm" />
+                      <span>Usuń projekt</span>
+                    </button>
+                  )}
                 </div>
               </div>
             </div>

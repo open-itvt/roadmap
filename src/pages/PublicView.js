@@ -169,6 +169,12 @@ function getBuildDate() {
     const today = new Date();
     return today.toISOString().split('T')[0];
 }
+function formatRefreshLabel(timestamp) {
+  const date = new Date(timestamp);
+  const formattedDate = date.toLocaleDateString('pl-PL');
+  const formattedTime = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' });
+  return `Zaktualizowano dane o ${formattedDate} - ${formattedTime}`;
+}
 function PublicView() {
     const [projects, setProjects] = (0, react_1.useState)([]);
   const [stagesByProjectId, setStagesByProjectId] = (0, react_1.useState)((getCachedSnapshot() === null || getCachedSnapshot() === void 0 ? void 0 : getCachedSnapshot().stagesByProjectId) || {});
@@ -389,7 +395,7 @@ function RoadmapContent({ project }) {
                         'bg-slate-800 text-slate-300'}`}>
                         {stage.status === 'completed' && 'Zakończone'}
                         {stage.status === 'in-progress' && 'W trakcie'}
-                        {stage.status === 'blocked' && 'W trakcie'}
+                        {stage.status === 'blocked' && 'Zablokowane'}
                         {stage.status === 'pending' && 'Oczekujące'}
                       </span>
                       {stage.status === 'in-progress' && stage.progress && (<p className="text-slate-400 text-xs mt-1">Postęp: {stage.progress}%</p>)}
@@ -405,6 +411,9 @@ function RoadmapContent({ project }) {
       <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-12 pt-6 border-t border-white/6">
         <fa_1.FaGlobe />
         <span>Każdy może przeglądać postępy</span>
+      </div>
+      <div className="mt-2 text-center text-xs text-slate-500">
+        {lastRefreshAt ? formatRefreshLabel(lastRefreshAt) : 'Zaktualizowano dane przed chwilą'}
       </div>
     </div>);
 }

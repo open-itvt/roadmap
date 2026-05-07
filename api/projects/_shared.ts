@@ -28,6 +28,7 @@ export async function createProject(project: Omit<Project, 'id' | 'createdAt' | 
   const now = new Date().toISOString()
   const newProject: Project = {
     ...project,
+    isLocked: project.isLocked ?? false,
     id: uuid(),
     createdAt: now,
     updatedAt: now,
@@ -107,6 +108,10 @@ export async function updateProject(id: string, updates: Partial<Project>): Prom
 
 export async function deleteProject(id: string): Promise<boolean> {
   const projects = await getProjectsFromRedis()
+  const existing = projects.find((project) => project.id === id)
+  if (existing?.isLocked) {
+    return false
+  }
   const filtered = projects.filter((p) => p.id !== id)
   if (filtered.length === projects.length) return false
   await saveProjectsToRedis(filtered)
@@ -141,6 +146,10 @@ export async function createStage(
   projectId: string,
   stage: Omit<Stage, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>,
 ): Promise<Stage> {
+  const project = await getProjectById(projectId)
+  if (!project) {
+    throw new Error('Project not found')
+  }
   const stages = await getStagesFromRedis()
   const now = new Date().toISOString()
   const newStage: Stage = {
@@ -174,6 +183,16 @@ export async function updateStage(stageId: string, updates: Partial<Stage>): Pro
 
 export async function deleteStage(id: string): Promise<boolean> {
   const stages = await getStagesFromRedis()
+  const stage = stages.find((item) => item.id === id)
+  if (!stage) {
+    return false
+  }
+
+  const project = await getProjectById(stage.projectId)
+  if (project?.isLocked) {
+    return false
+  }
+
   const filtered = stages.filter((s) => s.id !== id)
   if (filtered.length === stages.length) return false
   await saveStagestoRedis(filtered)

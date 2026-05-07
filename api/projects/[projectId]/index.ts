@@ -35,6 +35,11 @@ export default async function handler(req: any, res: any) {
     }
 
     if (req.method === 'DELETE') {
+      if (project.isLocked) {
+        res.status(423).json({ error: 'Project is locked' })
+        return
+      }
+
       const deleted = await deleteProject(String(projectId))
       if (!deleted) {
         res.status(404).json({ error: 'Project not found' })

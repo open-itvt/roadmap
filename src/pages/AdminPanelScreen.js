@@ -11,6 +11,7 @@ const core_1 = require("@dnd-kit/core");
 const sortable_1 = require("@dnd-kit/sortable");
 const sortable_2 = require("@dnd-kit/sortable");
 const utilities_1 = require("@dnd-kit/utilities");
+const FaLock = fa_1.FaLock;
 const PROJECT_GRADIENTS = [
     'from-violet-500 to-indigo-500',
     'from-slate-500 to-slate-700',
@@ -45,7 +46,7 @@ function getStageStatusLabel(status) {
             return 'Oczekujące';
     }
 }
-function SortableStageItem({ stage, index, selectedStage, editingStage, setSelectedStage, setEditingStage, handleDeleteStage, }) {
+function SortableStageItem({ stage, index, selectedStage, editingStage, canDeleteStage, setSelectedStage, setEditingStage, handleDeleteStage, }) {
     const { attributes, listeners, setNodeRef, transform, transition, } = (0, sortable_2.useSortable)({ id: stage.id });
     const style = {
         transform: utilities_1.CSS.Transform.toString(transform),
@@ -99,17 +100,17 @@ function SortableStageItem({ stage, index, selectedStage, editingStage, setSelec
           <button type="button" className="rounded-lg border border-slate-700/80 p-1.5 text-slate-300 transition hover:border-slate-600 hover:bg-white/[0.04]" {...attributes} {...listeners} title="Przeciągnij, aby zmienić kolejność">
             <fa_1.FaListUl className="text-xs"/>
           </button>
-          <button type="button" className="rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10" onClick={(e) => {
-            e.stopPropagation();
-            void handleDeleteStage(stage.id);
-        }} title="Usuń etap">
-            <fa_1.FaTrashAlt className="text-xs"/>
-          </button>
+          {canDeleteStage && (<button type="button" className="rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10" onClick={(e) => {
+                e.stopPropagation();
+                void handleDeleteStage(stage.id);
+            }} title="Usuń etap">
+              <fa_1.FaTrashAlt className="text-xs"/>
+            </button>)}
         </div>
       </div>
     </div>);
 }
-function ManagementTabContent({ projects, stages, selectedProject, setSelectedProject, resetProjectForm, resetStageForm, handleDuplicateProject, handleDeleteProject, handleDeleteStage, selectedProjectStages, editingStage, setEditingStage, handleSaveStageChanges, sensors, handleDragEnd, selectedStage, setSelectedStage, }) {
+function ManagementTabContent({ projects, stages, selectedProject, setSelectedProject, resetProjectForm, resetStageForm, handleDuplicateProject, handleDeleteStage, selectedProjectStages, editingStage, setEditingStage, handleSaveStageChanges, sensors, handleDragEnd, selectedStage, setSelectedStage, }) {
     const stageCountByProject = (projectId) => stages.filter((s) => s.projectId === projectId).length;
     return (<div className="space-y-6 pb-10">
       {/* Projects section */}
@@ -171,12 +172,6 @@ function ManagementTabContent({ projects, stages, selectedProject, setSelectedPr
                         void handleDuplicateProject(project);
                     }} title="Powiel projekt">
                       <fa_1.FaClone className="mx-auto"/>
-                    </button>
-                    <button type="button" className="flex-1 rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10" onClick={(e) => {
-                        e.stopPropagation();
-                        void handleDeleteProject(project.id);
-                    }} title="Usuń projekt">
-                      <fa_1.FaTrashAlt className="mx-auto"/>
                     </button>
                   </div>
                 </div>);
@@ -272,7 +267,7 @@ function ManagementTabContent({ projects, stages, selectedProject, setSelectedPr
 
             <core_1.DndContext sensors={sensors} collisionDetection={core_1.closestCenter} onDragEnd={handleDragEnd}>
               <sortable_1.SortableContext items={selectedProjectStages.map(s => s.id)} strategy={sortable_1.verticalListSortingStrategy}>
-                {selectedProjectStages.map((stage, index) => (<SortableStageItem key={stage.id} stage={stage} index={index} selectedStage={selectedStage} editingStage={editingStage} setSelectedStage={setSelectedStage} setEditingStage={setEditingStage} handleDeleteStage={handleDeleteStage}/>))}
+                {selectedProjectStages.map((stage, index) => (<SortableStageItem key={stage.id} stage={stage} index={index} selectedStage={selectedStage} editingStage={editingStage} canDeleteStage={!selectedProject?.isLocked} setSelectedStage={setSelectedStage} setEditingStage={setEditingStage} handleDeleteStage={handleDeleteStage}/>))}
               </sortable_1.SortableContext>
             </core_1.DndContext>
           </div>)}
@@ -575,6 +570,19 @@ function AdminPanelScreen() {
             console.error('Failed to save project:', error);
         }
     };
+    const handleLockProject = async () => {
+      if (!selectedProject || selectedProject.isLocked)
+        return;
+      try {
+        const updated = await endpoints_1.projectsApi.update(selectedProject.id, { isLocked: true });
+        setSelectedProject(updated);
+        setProjects(projects.map((project) => (project.id === updated.id ? updated : project)));
+        setEditingProject(updated);
+      }
+      catch (error) {
+        console.error('Failed to lock project:', error);
+      }
+    };
     const handleSaveStageChanges = async () => {
         if (!editingStage || !selectedProject)
             return;
@@ -725,7 +733,7 @@ function AdminPanelScreen() {
           </div>
 
           {/* Tab content */}
-          {activeTab === 'management' && (<ManagementTabContent projects={projects} stages={stages} selectedProject={selectedProject} setSelectedProject={setSelectedProject} resetProjectForm={resetProjectForm} resetStageForm={resetStageForm} handleDuplicateProject={handleDuplicateProject} handleDeleteProject={handleDeleteProject} handleDeleteStage={handleDeleteStage} selectedProjectStages={selectedProjectStages} editingStage={editingStage} setEditingStage={setEditingStage} handleSaveStageChanges={handleSaveStageChanges} sensors={sensors} handleDragEnd={handleDragEnd} selectedStage={selectedStage} setSelectedStage={setSelectedStage}/>)}
+          {activeTab === 'management' && (<ManagementTabContent projects={projects} stages={stages} selectedProject={selectedProject} setSelectedProject={setSelectedProject} resetProjectForm={resetProjectForm} resetStageForm={resetStageForm} handleDuplicateProject={handleDuplicateProject} handleDeleteStage={handleDeleteStage} selectedProjectStages={selectedProjectStages} editingStage={editingStage} setEditingStage={setEditingStage} handleSaveStageChanges={handleSaveStageChanges} sensors={sensors} handleDragEnd={handleDragEnd} selectedStage={selectedStage} setSelectedStage={setSelectedStage}/>)}
 
           {activeTab === 'details' && editingProject && (<div className="space-y-6 pb-10">
               <section className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
@@ -828,6 +836,10 @@ function AdminPanelScreen() {
                     <p className="text-sm text-white capitalize">{selectedProject.priority === 'high' ? 'Wysoki' : selectedProject.priority === 'medium' ? 'Średni' : 'Niski'}</p>
                   </div>
                 </div>
+                {selectedProject.isLocked && (<div className="mt-4 inline-flex items-center gap-2 rounded-full border border-slate-700/30 bg-slate-800/50 px-3 py-1.5 text-xs font-medium text-slate-300">
+                    <fa_1.FaLock className="text-slate-400"/>
+                    <span>Projekt zablokowany</span>
+                  </div>)}
               </div>
               <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
                 <h4 className="text-sm font-semibold text-slate-300 mb-3">Szybkie akcje</h4>
@@ -840,6 +852,14 @@ function AdminPanelScreen() {
                     <fa_1.FaClone className="text-sm"/>
                     <span>Duplikuj</span>
                   </button>
+                  {!selectedProject.isLocked && (<button onClick={handleLockProject} className="inline-flex items-center gap-2 rounded-xl border border-slate-600/40 bg-slate-700/20 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-500/60 hover:bg-slate-700/40">
+                      <fa_1.FaLock className="text-sm"/>
+                      <span>Zablokuj</span>
+                    </button>)}
+                  {!selectedProject.isLocked && (<button onClick={() => handleDeleteProject(selectedProject.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/20 hover:border-red-500/30">
+                      <fa_1.FaTrashAlt className="text-sm"/>
+                      <span>Usuń projekt</span>
+                    </button>)}
                 </div>
               </div>
             </div>)}
