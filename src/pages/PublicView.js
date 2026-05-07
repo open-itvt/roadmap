@@ -106,22 +106,22 @@ function PublicView() {
     (0, react_1.useEffect)(() => {
         const loadProjects = async () => {
             try {
-                // If a session token exists (demo signed-in or dev), fetch live data from API
-                const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
-                if (sessionToken) {
-                    try {
-                        const live = await endpoints_1.projectsApi.getAll();
-                        if (live && live.length > 0) {
-                            setProjects(live);
-                            setSelectedProject(live[0]);
-                            setLoading(false);
-                            return;
-                        }
-                    }
-                    catch (err) {
-                        console.warn('Failed to load live projects, falling back to sample', err);
-                    }
+                // Always attempt to fetch live data from API for public view
+                try {
+                  const live = await endpoints_1.projectsApi.getAll();
+                  if (live && live.length > 0) {
+                    setProjects(live);
+                    setSelectedProject(live[0]);
+                    setLoading(false);
+                    return;
+                  }
+                  // If API returns empty list, fall back to sample data
+                  console.warn('No projects returned from API, falling back to sample data');
                 }
+                catch (err) {
+                  console.warn('Failed to load live projects, falling back to sample', err);
+                }
+
                 // Fallback to sample data
                 setProjects(SAMPLE_PROJECTS);
                 setSelectedProject(SAMPLE_PROJECTS[0]);
@@ -182,7 +182,7 @@ function PublicView() {
         <div className="rounded-2xl border border-slate-800/80 bg-[#0f141b] p-3 lg:p-4 shadow-[0_0_0_1px_rgba(15,23,42,0.7)]">
           <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500">Nightly Release</div>
           <div className="mt-1 text-sm font-medium text-white">{getBuildDate()}</div>
-          <div className="mt-1 text-xs leading-5 text-slate-400">Latest build deployed to the public view.</div>
+          <div className="mt-1 text-xs leading-5 text-slate-400">Latest build deployed to the public view</div>
         </div>
       </div>
     </>);
@@ -259,16 +259,16 @@ function RoadmapContent({ project }) {
     (0, react_1.useEffect)(() => {
         const loadStages = async () => {
             try {
-                const sessionToken = typeof window !== 'undefined' ? localStorage.getItem('sessionToken') : null;
-                if (sessionToken) {
-                    try {
-                        const liveStages = await endpoints_1.stagesApi.getByProjectId(project.id);
-                        setStages(liveStages.sort((a, b) => a.order - b.order));
-                        return;
-                    }
-                    catch (err) {
-                        console.warn('Failed to load live stages, falling back to sample', err);
-                    }
+                try {
+                  const liveStages = await endpoints_1.stagesApi.getByProjectId(project.id);
+                  if (liveStages && liveStages.length > 0) {
+                    setStages(liveStages.sort((a, b) => a.order - b.order));
+                    return;
+                  }
+                  console.warn('No stages returned from API, falling back to sample data');
+                }
+                catch (err) {
+                  console.warn('Failed to load live stages, falling back to sample', err);
                 }
                 // Fallback to sample data
                 const sampleStages = SAMPLE_STAGES.filter(s => s.projectId === project.id);
