@@ -353,6 +353,18 @@ function AdminPanelScreen() {
         try {
             const data = await endpoints_1.projectsApi.getAll();
             setProjects(data);
+        if (data.length > 0) {
+          const allStages = await Promise.all(data.map(async (project) => {
+            try {
+              return await endpoints_1.stagesApi.getByProjectId(project.id);
+            }
+            catch (error) {
+              console.error(`Failed to load stages for project ${project.id}:`, error);
+              return [];
+            }
+          }));
+          setStages(allStages.flat().sort((left, right) => left.order - right.order));
+        }
             if (data.length > 0 && !selectedProject) {
                 setSelectedProject(data[0]);
             }
