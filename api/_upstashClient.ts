@@ -15,8 +15,22 @@ function ensureClient(): Redis {
   return client
 }
 
+function normalizeRedisGetValue(raw: unknown): string | null {
+  if (raw === null || raw === undefined) {
+    return null
+  }
+  if (typeof raw === 'string') {
+    return raw
+  }
+  try {
+    return JSON.stringify(raw)
+  } catch {
+    return String(raw)
+  }
+}
+
 const redis = {
-  get: (key: string) => ensureClient().get(key),
+  get: async (key: string) => normalizeRedisGetValue(await ensureClient().get(key)),
   set: (key: string, value: any, options?: any) => ensureClient().set(key, value, options),
   del: (...keys: string[]) => ensureClient().del(...keys),
   keys: (pattern: string) => ensureClient().keys(pattern),
