@@ -82,8 +82,9 @@ export async function duplicateProjectWithRelations(
       updatedAt: new Date().toISOString(),
     }))
 
-  await saveStagestoRedis([...allStages.filter((stage) => stage.projectId !== sourceProjectId), ...createdStages])
-  await saveLinksToRedis([...allLinks.filter((link) => !stageIdMap.has(link.stageId)), ...clonedLinks])
+  // Keep existing source stages/links and append cloned copies for the new project.
+  await saveStagestoRedis([...allStages, ...createdStages])
+  await saveLinksToRedis([...allLinks, ...clonedLinks])
 
   return createdProject
 }
