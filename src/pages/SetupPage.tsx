@@ -1,9 +1,7 @@
 import { useState, useEffect, useMemo } from 'react'
 import { FaEye, FaEyeSlash, FaCheckCircle, FaExclamationTriangle } from 'react-icons/fa'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '@/contexts/AuthContext'
 import { authApi } from '@/api/auth'
-import { initApi } from '@/api/endpoints'
 import { generateRandomPassword, validatePasswordStrength } from '@/utils/crypto'
 
 const SETUP_STORAGE_KEY = 'roadmapSetupState'
@@ -57,7 +55,6 @@ function clearSetupState() {
 export function SetupPage() {
   const navigate = useNavigate()
   const location = useLocation()
-  const { checkAuth } = useAuth()
   const [username, setUsername] = useState('')
   const [sessionId, setSessionId] = useState('')
   const [qrCode, setQrCode] = useState('')
@@ -174,12 +171,9 @@ export function SetupPage() {
     setError('')
 
     try {
-      const response = await authApi.setPassword(currentSessionId, password)
-      localStorage.setItem('sessionToken', response.sessionToken)
-      await initApi.initialize()
-      await checkAuth()
+      await authApi.setPassword(currentSessionId, password)
       clearSetupState()
-      navigate('/roadmap-manage', { replace: true })
+      navigate('/auth/login', { replace: true })
     } catch (err: unknown) {
       setError((err as any)?.response?.data?.error || 'Failed to set password')
     } finally {
