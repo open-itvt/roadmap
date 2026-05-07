@@ -551,7 +551,8 @@ export function AdminPanelScreen() {
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null)
   const [selectedLinkStageId, setSelectedLinkStageId] = useState<string>('')
   const [stageLinks, setStageLinks] = useState<Link[]>([])
-  const [projectLinks, setProjectLinks] = useState<Link[]>([])
+  const [projectPrimaryLink, setProjectPrimaryLink] = useState<Link | null>(null)
+  const [showProjectSelector, setShowProjectSelector] = useState(false)
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
   const [linkFormData, setLinkFormData] = useState<{
     title: string
@@ -807,11 +808,11 @@ export function AdminPanelScreen() {
       const all = await Promise.all(projectStages.map((s) => linksApi.getByStageId(projectId, s.id).catch(() => [] as Link[])))
       const allLinks = all.flat()
       const seen = new Set<string>()
-      const githubLinks = allLinks.filter((l) => l.type === 'github' && !seen.has(l.url) && (seen.add(l.url), true))
-      setProjectLinks(githubLinks)
+      const first = allLinks.find((l) => l.type === 'github' && !seen.has(l.url) && (seen.add(l.url), true)) || null
+      setProjectPrimaryLink(first)
     } catch (error) {
       console.error('Failed to load project links:', error)
-      setProjectLinks([])
+      setProjectPrimaryLink(null)
     }
   }, [stages])
 
@@ -1181,7 +1182,7 @@ export function AdminPanelScreen() {
       <div className="px-3">
         <button
           type="button"
-          onClick={() => setSelectedProject(selectedProject)}
+          onClick={() => setShowProjectSelector((s) => !s)}
           className="flex w-full items-center gap-3 rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 py-2.5 text-left transition hover:border-slate-700/40 hover:bg-white/[0.05]"
         >
           <span className={`grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br ${PROJECT_GRADIENTS[0]} text-white shadow-lg shadow-violet-500/20`}>
@@ -1192,6 +1193,25 @@ export function AdminPanelScreen() {
           </span>
           <FaChevronDown className="text-slate-400" />
         </button>
+        {showProjectSelector && (
+          <div className="mt-2 rounded-xl border border-slate-700/20 bg-white/[0.02] p-2">
+            {projects.map((project) => (
+              <button
+                key={project.id}
+                onClick={() => {
+                  setSelectedProject(project)
+                  setShowProjectSelector(false)
+                }}
+                className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
+                  selectedProject?.id === project.id ? 'bg-violet-500/10 text-white' : 'text-slate-300 hover:bg-white/5'
+                }`}
+              >
+                <span className="grid h-7 w-7 place-items-center rounded-md bg-white/6 text-sm flex-shrink-0">{renderProjectIcon(project.icon)}</span>
+                <span className="truncate">{project.name}</span>
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="px-3 py-4">
@@ -1535,17 +1555,13 @@ export function AdminPanelScreen() {
                       <div className="text-xs text-slate-400">Skompilowane linki GitHub z etapów projektu</div>
                     </div>
                   </div>
-                  {projectLinks.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {projectLinks.map((link) => (
-                        <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-200">
-                          <FaExternalLinkAlt className="text-xs" />
-                          {link.title}
-                        </a>
-                      ))}
-                    </div>
+                  {projectPrimaryLink ? (
+                    <a href={projectPrimaryLink.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-200">
+                      <FaExternalLinkAlt className="text-xs" />
+                      {projectPrimaryLink.title}
+                    </a>
                   ) : (
-                    <div className="text-sm text-slate-400">Brak linków projektu. Dodaj linki do etapów, aby występowały tutaj.</div>
+                    <div className="text-sm text-slate-400">Brak linku projektu. Dodaj link GitHub do jednego z etapów, aby ustawić link projektu.</div>
                   )}
                 </div>
 
