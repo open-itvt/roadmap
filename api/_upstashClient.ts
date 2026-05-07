@@ -16,11 +16,11 @@ function ensureClient(): Redis {
 }
 
 const redis = {
-  get: (...args: any[]) => ensureClient().get(...(args as [any, any?])),
-  set: (...args: any[]) => ensureClient().set(...(args as [any, any, any?])),
-  del: (...args: any[]) => ensureClient().del(...(args as [any])),
-  keys: (...args: any[]) => ensureClient().keys(...(args as [any])),
-  expire: (...args: any[]) => ensureClient().expire(...(args as [any, any])),
+  get: (key: string) => ensureClient().get(key),
+  set: (key: string, value: any, options?: any) => ensureClient().set(key, value, options),
+  del: (...keys: string[]) => ensureClient().del(...keys),
+  keys: (pattern: string) => ensureClient().keys(pattern),
+  expire: (key: string, ttl: number) => ensureClient().expire(key, ttl),
 }
 
 export default redis
