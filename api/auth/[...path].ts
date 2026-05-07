@@ -33,8 +33,20 @@ function getLocalAuthEnv() {
   }
 }
 
+function methodNotAllowed(res: any, method: string) {
+  res.status(405).json({ error: 'Method not allowed', method })
+  return
+}
+
 export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return
+
+  // Helpful logging for debugging 405s on deployed platforms
+  try {
+    console.log('auth request', { method: req.method, url: req.url, query: req.query })
+  } catch (e) {
+    // ignore
+  }
 
   const pathSegments: string[] = Array.isArray(req.query.path)
     ? req.query.path
@@ -71,8 +83,7 @@ export default async function handler(req: any, res: any) {
 
 async function handleInit(req: any, res: any) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' })
-    return
+    return methodNotAllowed(res, req.method)
   }
 
   try {
@@ -117,8 +128,7 @@ async function handleInit(req: any, res: any) {
 
 async function handleLogin(req: any, res: any) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' })
-    return
+    return methodNotAllowed(res, req.method)
   }
 
   try {
@@ -212,8 +222,7 @@ async function handleLogin(req: any, res: any) {
 
 async function handleLogout(req: any, res: any) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' })
-    return
+    return methodNotAllowed(res, req.method)
   }
 
   try {
@@ -234,8 +243,7 @@ async function handleLogout(req: any, res: any) {
 
 async function handleMe(req: any, res: any) {
   if (req.method !== 'GET') {
-    res.status(405).json({ error: 'Method not allowed' })
-    return
+    return methodNotAllowed(res, req.method)
   }
 
   try {
@@ -274,8 +282,7 @@ async function handleMe(req: any, res: any) {
 
 async function handleVerifyTotp(req: any, res: any) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' })
-    return
+    return methodNotAllowed(res, req.method)
   }
 
   try {
@@ -322,8 +329,7 @@ async function handleVerifyTotp(req: any, res: any) {
 
 async function handleSetPassword(req: any, res: any) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' })
-    return
+    return methodNotAllowed(res, req.method)
   }
 
   try {
@@ -373,8 +379,7 @@ async function handleSetPassword(req: any, res: any) {
 
 async function handleWebAuthnRegisterStart(req: any, res: any) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' })
-    return
+    return methodNotAllowed(res, req.method)
   }
 
   try {
@@ -429,8 +434,7 @@ async function handleWebAuthnRegisterStart(req: any, res: any) {
 
 async function handleWebAuthnRegisterComplete(req: any, res: any) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' })
-    return
+    return methodNotAllowed(res, req.method)
   }
 
   try {
