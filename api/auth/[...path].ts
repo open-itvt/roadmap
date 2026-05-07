@@ -39,6 +39,11 @@ function methodNotAllowed(res: any, method: string) {
   return
 }
 
+function getRouteSegments(req: any): string[] {
+  const rawPath = req.query.path ?? req.query['...path']
+  return Array.isArray(rawPath) ? rawPath : rawPath ? [rawPath] : []
+}
+
 export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return
 
@@ -50,11 +55,7 @@ export default async function handler(req: any, res: any) {
       // ignore
     }
 
-    const pathSegments: string[] = Array.isArray(req.query.path)
-      ? req.query.path
-      : req.query.path
-      ? [req.query.path]
-      : []
+    const pathSegments: string[] = getRouteSegments(req)
     const route = pathSegments.join('/')
 
     switch (route) {
