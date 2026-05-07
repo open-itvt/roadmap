@@ -16,13 +16,14 @@ import {
   getWebAuthnOrigin,
   getWebAuthnRpID,
   issueSession,
+  issueLocalAuthSession,
   saveAdmin,
   deleteSession,
   getSessionFromToken,
 } from './_shared'
 
 function isLocalAuthEnabled(): boolean {
-  return String(process.env.LOCAL_AUTH || '').toLowerCase() === 'yes'
+  return process.env.NODE_ENV === 'development' && String(process.env.LOCAL_AUTH || '').toLowerCase() === 'yes'
 }
 
 function getLocalAuthEnv() {
@@ -179,27 +180,7 @@ async function handleLogin(req: any, res: any) {
         return
       }
 
-      // Ensure /auth/me resolves this user as a valid admin after login.
-      const existingAdmin = await getAdminByUsername(localAdmin)
-      if (!existingAdmin) {
-        await saveAdmin({
-          username: localAdmin,
-          passwordHash: 'local-auth',
-          totpSecret: 'local-auth',
-          createdAt: Date.now(),
-          isSetupComplete: true,
-        })
-      }
-
-      const admin = (await getAdminByUsername(localAdmin)) || {
-        username: localAdmin,
-        passwordHash: 'local-auth',
-        totpSecret: 'local-auth',
-        createdAt: Date.now(),
-        isSetupComplete: true,
-      }
-
-      const { sessionToken } = await issueSession(admin)
+      const { sessionToken } = await issueLocalAuthSession(localAdmin)
       res.status(200).json({ success: true, data: { sessionToken, adminId: localAdmin } })
       return
     }
@@ -249,6 +230,11 @@ async function handleLogout(req: any, res: any) {
     const session = await getSessionFromToken(token)
 
     if (session) {
+      if (session.localAuth) {
+        res.status(200).json({ success: true })
+        return
+      }
+
       await deleteSession(session.sessionId)
     }
 
@@ -268,6 +254,19 @@ async function handleMe(req: any, res: any) {
     const authHeader = req.headers.authorization || ''
     const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : undefined
     const session = await getSessionFromToken(token)
+
+    if (session?.localAuth) {
+      res.status(200).json({
+        success: true,
+        data: {
+          isAuthenticated: true,
+          adminId: session.username,
+          isSetupComplete: true,
+          adminExists: true,
+        },
+      })
+      return
+    }
 
     const admins = await getAllAdmins()
     const adminExists = admins.length > 0

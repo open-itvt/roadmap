@@ -24,6 +24,7 @@ export interface SessionRecord {
   username: string
   createdAt: number
   expiresAt: number
+  localAuth?: boolean
 }
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7
@@ -43,6 +44,10 @@ export function getWebAuthnOrigin(): string {
 
 export function getWebAuthnRpID(): string {
   return process.env.WEBAUTHN_RP_ID || 'localhost'
+}
+
+function isLocalAuthSession(sessionId?: string): boolean {
+  return Boolean(sessionId && sessionId.startsWith('local-auth:'))
 }
 
 export async function getAdminByUsername(username: string): Promise<AdminRecord | null> {
@@ -98,12 +103,45 @@ export async function issueSession(admin: AdminRecord): Promise<{ sessionToken: 
   return { sessionToken, sessionId }
 }
 
+export async function issueLocalAuthSession(username: string): Promise<{ sessionToken: string; sessionId: string }> {
+  const sessionId = `local-auth:${username}:${Date.now()}`
+
+  const sessionToken = jwt.sign(
+    {
+      sub: username,
+      sid: sessionId,
+      localAuth: true,
+    },
+    getJwtSecret(),
+    {
+      expiresIn: `${SESSION_TTL_SECONDS}s`,
+    },
+  )
+
+  return { sessionToken, sessionId }
+}
+
 export async function getSessionFromToken(token?: string): Promise<SessionRecord | null> {
   if (!token) return null
 
   try {
-    const payload = jwt.verify(token, getJwtSecret()) as jwt.JwtPayload & { sid?: string }
+    const payload = jwt.verify(token, getJwtSecret()) as jwt.JwtPayload & { sid?: string; localAuth?: boolean }
     const sessionId = payload.sid
+    const username = String(payload.sub || '')
+
+    if (payload.localAuth || isLocalAuthSession(sessionId)) {
+      if (!username) return null
+
+      return {
+        sessionId: sessionId || `local-auth:${username}`,
+        adminId: username,
+        username,
+        createdAt: typeof payload.iat === 'number' ? payload.iat * 1000 : Date.now(),
+        expiresAt: typeof payload.exp === 'number' ? payload.exp * 1000 : Date.now() + SESSION_TTL_SECONDS * 1000,
+        localAuth: true,
+      }
+    }
+
     if (!sessionId) return null
 
     const raw = await redis.get(`session:${sessionId}`)
