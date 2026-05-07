@@ -8,7 +8,12 @@ dotenv.config({ path: path.resolve(process.cwd(), '.env') })
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// Dynamically import and cache handlers
+interface CatchAllRoute {
+  pattern: RegExp
+  handlerPath: string
+  basePath: string
+}
+
 const handlersCache = new Map()
 
 async function getHandler(handlerPath: string) {
@@ -26,25 +31,12 @@ async function getHandler(handlerPath: string) {
   }
 }
 
-// Route mapping
-const routeMap: Record<string, string> = {
-  '/api/auth/me': './api/auth/me.ts',
-  '/api/auth/init': './api/auth/init.ts',
-  '/api/auth/login': './api/auth/login.ts',
-  '/api/auth/logout': './api/auth/logout.ts',
-  '/api/auth/verify-totp': './api/auth/verify-totp.ts',
-  '/api/auth/set-password': './api/auth/set-password.ts',
-  '/api/auth/bypass-tmp': './api/auth/bypass-tmp.ts',
-  '/api/auth/webauthn/auth/start': './api/auth/webauthn/auth/start.ts',
-  '/api/auth/webauthn/auth/complete': './api/auth/webauthn/auth/complete.ts',
-  '/api/auth/webauthn/register/start': './api/auth/webauthn/register/start.ts',
-  '/api/auth/webauthn/register/complete': './api/auth/webauthn/register/complete.ts',
-  '/api/admin/reset': './api/admin/reset.ts',
-  '/api/init': './api/init.ts',
-  '/api/projects': './api/projects.ts',
-}
+const CATCH_ALL_ROUTES: CatchAllRoute[] = [
+  { pattern: /^\/api\/auth(\/.*)?$/, handlerPath: './api/auth/[...path].ts', basePath: '/api/auth' },
+  { pattern: /^\/api\/admin(\/.*)?$/, handlerPath: './api/admin/[[...path]].ts', basePath: '/api/admin' },
+  { pattern: /^\/api\/projects(\/.*)?$/, handlerPath: './api/projects/[[...path]].ts', basePath: '/api/projects' },
+]
 
-// Parse JSON body
 function parseBody(req: http.IncomingMessage): Promise<Record<string, any>> {
   return new Promise((resolve) => {
     let body = ''
@@ -67,12 +59,26 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type,Authorization',
 }
 
-// Create server
+async function getHandlerFromCache(handlerPath: string) {
+  if (handlersCache.has(handlerPath)) {
+    return handlersCache.get(handlerPath)
+  }
+
+  try {
+    const module = await import(path.join(__dirname, handlerPath))
+    const handler = module.default
+    handlersCache.set(handlerPath, handler)
+    return handler
+  } catch (error: any) {
+    console.error(`Error loading ${handlerPath}:`, error.message)
+    return null
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '', `http://${req.headers.host}`)
   const pathname = url.pathname
 
-  // expose parsed query params on the request like Express (handlers expect req.query)
   ;(req as any).query = Object.fromEntries(url.searchParams.entries())
   console.log(`${req.method} ${pathname}`)
 
@@ -82,28 +88,19 @@ const server = http.createServer(async (req, res) => {
     return
   }
 
-  // Support dynamic project routes (e.g. /api/projects/:id and /api/projects/:projectId/stages)
-  let handlerPath = routeMap[pathname]
-  if (!handlerPath) {
-    const parts = pathname.split('/').filter(Boolean) // ['api','projects', ...]
-    if (parts[0] === 'api' && parts[1] === 'projects') {
-      // /api/projects/:id
-      if (parts.length === 3) {
-        handlerPath = './api/projects/[id].ts'
-      }
+  let resolvedHandlerPath: string | undefined
+  let pathSegments: string[] = []
 
-      // /api/projects/:projectId/stages
-      if (parts.length >= 4 && parts[3] === 'stages') {
-        if (parts.length === 4) {
-          handlerPath = './api/projects/[projectId]/stages.ts'
-        } else if (parts.length === 5) {
-          handlerPath = './api/projects/[projectId]/stages/[stageId].ts'
-        }
-      }
+  for (const { pattern, handlerPath, basePath } of CATCH_ALL_ROUTES) {
+    if (pattern.test(pathname)) {
+      resolvedHandlerPath = handlerPath
+      const remaining = pathname.slice(basePath.length).replace(/^\//, '')
+      pathSegments = remaining ? remaining.split('/') : []
+      break
     }
   }
 
-  if (!handlerPath) {
+  if (!resolvedHandlerPath) {
     res.writeHead(404, { 'Content-Type': 'application/json', ...corsHeaders })
     res.end(JSON.stringify({ error: 'Not found', success: false }))
     return
@@ -126,21 +123,21 @@ const server = http.createServer(async (req, res) => {
   ;(req as any).query = query
 
   try {
-    const handler = await getHandler(handlerPath)
-
+    const handler = await getHandlerFromCache(resolvedHandlerPath)
     if (!handler) {
       res.writeHead(500, { 'Content-Type': 'application/json', ...corsHeaders })
       res.end(JSON.stringify({ error: 'Handler not found', success: false }))
       return
     }
 
-    // Parse body for POST/PUT/PATCH
     if (['POST', 'PUT', 'PATCH'].includes(req.method || 'GET')) {
       const body = await parseBody(req)
       ;(req as any).body = body
     }
 
-    // Wrap response for Express-like handlers
+    const searchParams = Object.fromEntries(url.searchParams.entries())
+    ;(req as any).query = { ...searchParams, ...(pathSegments.length > 0 ? { path: pathSegments } : {}) }
+
     const wrappedRes = Object.create(res)
     wrappedRes.status = function (code: number) {
       this.statusCode = code
@@ -163,7 +160,6 @@ const server = http.createServer(async (req, res) => {
     }
     wrappedRes.end = res.end.bind(res)
 
-    // Call handler
     await handler(req, wrappedRes)
   } catch (error: any) {
     console.error('Handler error:', error)

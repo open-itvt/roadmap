@@ -1,67 +1,27 @@
-import redis from '../upstashClient'
+import redis from '../_upstashClient'
 import { v4 as uuid } from 'uuid'
 import type { Project, Stage, Link } from '@/types'
 
-function parseRedisValue<T>(value: unknown): T | null {
-  if (value == null) return null
-  if (typeof value === 'string') {
-    try {
-      return JSON.parse(value) as T
-    } catch {
-      return null
-    }
-  }
-
-  if (typeof value === 'object') {
-    return value as T
-  }
-
+export async function getProjectsFromRedis(): Promise<Project[]> {
   try {
-    return JSON.parse(String(value)) as T
-  } catch {
-    return null
-  }
-}
-
-function getStoragePrefix(authHeader?: string): string {
-  const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : authHeader || ''
-
-  if (process.env.NODE_ENV === 'development' && token.startsWith('dev:')) {
-    return 'demo_'
-  }
-
-  return ''
-}
-
-function getProjectKey(authHeader?: string): string {
-  return `${getStoragePrefix(authHeader)}projects`
-}
-
-function getStageKey(authHeader?: string): string {
-  return `${getStoragePrefix(authHeader)}stages`
-}
-
-// Project operations
-export async function getProjectsFromRedis(authHeader?: string): Promise<Project[]> {
-  try {
-    const data = await redis.get(getProjectKey(authHeader))
-    return parseRedisValue<Project[]>(data) || []
+    const data = await redis.get('projects')
+    return data ? JSON.parse(String(data)) : []
   } catch {
     return []
   }
 }
 
-export async function saveProjectsToRedis(projects: Project[], authHeader?: string): Promise<void> {
-  await redis.set(getProjectKey(authHeader), JSON.stringify(projects))
+export async function saveProjectsToRedis(projects: Project[]): Promise<void> {
+  await redis.set('projects', JSON.stringify(projects))
 }
 
-export async function getProjectById(id: string, authHeader?: string): Promise<Project | null> {
-  const projects = await getProjectsFromRedis(authHeader)
-  return projects.find(p => p.id === id) || null
+export async function getProjectById(id: string): Promise<Project | null> {
+  const projects = await getProjectsFromRedis()
+  return projects.find((p) => p.id === id) || null
 }
 
-export async function createProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>, authHeader?: string): Promise<Project> {
-  const projects = await getProjectsFromRedis(authHeader)
+export async function createProject(project: Omit<Project, 'id' | 'createdAt' | 'updatedAt'>): Promise<Project> {
+  const projects = await getProjectsFromRedis()
   const now = new Date().toISOString()
   const newProject: Project = {
     ...project,
@@ -69,14 +29,15 @@ export async function createProject(project: Omit<Project, 'id' | 'createdAt' | 
     createdAt: now,
     updatedAt: now,
   }
+
   projects.push(newProject)
-  await saveProjectsToRedis(projects, authHeader)
+  await saveProjectsToRedis(projects)
   return newProject
 }
 
-export async function updateProject(id: string, updates: Partial<Project>, authHeader?: string): Promise<Project | null> {
-  const projects = await getProjectsFromRedis(authHeader)
-  const projectIndex = projects.findIndex(p => p.id === id)
+export async function updateProject(id: string, updates: Partial<Project>): Promise<Project | null> {
+  const projects = await getProjectsFromRedis()
+  const projectIndex = projects.findIndex((p) => p.id === id)
   if (projectIndex === -1) return null
 
   const updated: Project = {
@@ -84,47 +45,49 @@ export async function updateProject(id: string, updates: Partial<Project>, authH
     ...updates,
     updatedAt: new Date().toISOString(),
   }
+
   projects[projectIndex] = updated
-  await saveProjectsToRedis(projects, authHeader)
+  await saveProjectsToRedis(projects)
   return updated
 }
 
-export async function deleteProject(id: string, authHeader?: string): Promise<boolean> {
-  const projects = await getProjectsFromRedis(authHeader)
-  const filtered = projects.filter(p => p.id !== id)
+export async function deleteProject(id: string): Promise<boolean> {
+  const projects = await getProjectsFromRedis()
+  const filtered = projects.filter((p) => p.id !== id)
   if (filtered.length === projects.length) return false
-  await saveProjectsToRedis(filtered, authHeader)
-  // Also delete all stages for this project
-  await deleteProjectStages(id, authHeader)
+  await saveProjectsToRedis(filtered)
+  await deleteProjectStages(id)
   return true
 }
 
-// Stages operations
-export async function getStagesFromRedis(authHeader?: string): Promise<Stage[]> {
+export async function getStagesFromRedis(): Promise<Stage[]> {
   try {
-    const data = await redis.get(getStageKey(authHeader))
-    return parseRedisValue<Stage[]>(data) || []
+    const data = await redis.get('stages')
+    return data ? JSON.parse(String(data)) : []
   } catch {
     return []
   }
 }
 
-export async function saveStagestoRedis(stages: Stage[], authHeader?: string): Promise<void> {
-  await redis.set(getStageKey(authHeader), JSON.stringify(stages))
+export async function saveStagestoRedis(stages: Stage[]): Promise<void> {
+  await redis.set('stages', JSON.stringify(stages))
 }
 
-export async function getStagesByProjectId(projectId: string, authHeader?: string): Promise<Stage[]> {
-  const stages = await getStagesFromRedis(authHeader)
-  return stages.filter(s => s.projectId === projectId).sort((a, b) => a.order - b.order)
+export async function getStagesByProjectId(projectId: string): Promise<Stage[]> {
+  const stages = await getStagesFromRedis()
+  return stages.filter((s) => s.projectId === projectId).sort((a, b) => a.order - b.order)
 }
 
-export async function getStageById(id: string, authHeader?: string): Promise<Stage | null> {
-  const stages = await getStagesFromRedis(authHeader)
-  return stages.find(s => s.id === id) || null
+export async function getStageById(id: string): Promise<Stage | null> {
+  const stages = await getStagesFromRedis()
+  return stages.find((s) => s.id === id) || null
 }
 
-export async function createStage(projectId: string, stage: Omit<Stage, 'id' | 'createdAt' | 'updatedAt'>, authHeader?: string): Promise<Stage> {
-  const stages = await getStagesFromRedis(authHeader)
+export async function createStage(
+  projectId: string,
+  stage: Omit<Stage, 'id' | 'projectId' | 'createdAt' | 'updatedAt'>,
+): Promise<Stage> {
+  const stages = await getStagesFromRedis()
   const now = new Date().toISOString()
   const newStage: Stage = {
     ...stage,
@@ -133,14 +96,15 @@ export async function createStage(projectId: string, stage: Omit<Stage, 'id' | '
     createdAt: now,
     updatedAt: now,
   }
+
   stages.push(newStage)
-  await saveStagestoRedis(stages, authHeader)
+  await saveStagestoRedis(stages)
   return newStage
 }
 
-export async function updateStage(stageId: string, updates: Partial<Stage>, authHeader?: string): Promise<Stage | null> {
-  const stages = await getStagesFromRedis(authHeader)
-  const stageIndex = stages.findIndex(s => s.id === stageId)
+export async function updateStage(stageId: string, updates: Partial<Stage>): Promise<Stage | null> {
+  const stages = await getStagesFromRedis()
+  const stageIndex = stages.findIndex((s) => s.id === stageId)
   if (stageIndex === -1) return null
 
   const updated: Stage = {
@@ -148,68 +112,73 @@ export async function updateStage(stageId: string, updates: Partial<Stage>, auth
     ...updates,
     updatedAt: new Date().toISOString(),
   }
+
   stages[stageIndex] = updated
-  await saveStagestoRedis(stages, authHeader)
+  await saveStagestoRedis(stages)
   return updated
 }
 
-export async function deleteStage(id: string, authHeader?: string): Promise<boolean> {
-  const stages = await getStagesFromRedis(authHeader)
-  const filtered = stages.filter(s => s.id !== id)
+export async function deleteStage(id: string): Promise<boolean> {
+  const stages = await getStagesFromRedis()
+  const filtered = stages.filter((s) => s.id !== id)
   if (filtered.length === stages.length) return false
-  await saveStagestoRedis(filtered, authHeader)
+  await saveStagestoRedis(filtered)
   return true
 }
 
-export async function deleteProjectStages(projectId: string, authHeader?: string): Promise<void> {
-  const stages = await getStagesFromRedis(authHeader)
-  const filtered = stages.filter(s => s.projectId !== projectId)
-  await saveStagestoRedis(filtered, authHeader)
+export async function deleteProjectStages(projectId: string): Promise<void> {
+  const stages = await getStagesFromRedis()
+  const filtered = stages.filter((s) => s.projectId !== projectId)
+  await saveStagestoRedis(filtered)
 }
 
-export async function reorderStages(projectId: string, stageIds: string[], authHeader?: string): Promise<Stage[]> {
-  const stages = await getStagesFromRedis(authHeader)
-  const projectStages = stages.filter(s => s.projectId === projectId)
-  const otherStages = stages.filter(s => s.projectId !== projectId)
+export async function reorderStages(projectId: string, stageIds: string[]): Promise<Stage[]> {
+  const stages = await getStagesFromRedis()
+  const projectStages = stages.filter((s) => s.projectId === projectId)
+  const otherStages = stages.filter((s) => s.projectId !== projectId)
 
-  const reordered = stageIds.map((id, order) => {
-    const stage = projectStages.find(s => s.id === id)
-    if (stage) {
-      return { ...stage, order, updatedAt: new Date().toISOString() }
-    }
-    return null
-  }).filter(Boolean) as Stage[]
+  const reordered = stageIds
+    .map((id, order) => {
+      const stage = projectStages.find((s) => s.id === id)
+      if (stage) {
+        return { ...stage, order, updatedAt: new Date().toISOString() }
+      }
+      return null
+    })
+    .filter(Boolean) as Stage[]
 
   const allStages = [...otherStages, ...reordered]
-  await saveStagestoRedis(allStages, authHeader)
+  await saveStagestoRedis(allStages)
   return reordered
 }
 
-function getLinkKey(authHeader?: string): string {
-  return `${getStoragePrefix(authHeader)}links`
+function getLinkKey(): string {
+  return 'links'
 }
 
-// Links operations
-export async function getLinksFromRedis(authHeader?: string): Promise<Link[]> {
+export async function getLinksFromRedis(): Promise<Link[]> {
   try {
-    const data = await redis.get(getLinkKey(authHeader))
-    return parseRedisValue<Link[]>(data) || []
+    const data = await redis.get(getLinkKey())
+    return data ? JSON.parse(String(data)) : []
   } catch {
     return []
   }
 }
 
-export async function saveLinksToRedis(links: Link[], authHeader?: string): Promise<void> {
-  await redis.set(getLinkKey(authHeader), JSON.stringify(links))
+export async function saveLinksToRedis(links: Link[]): Promise<void> {
+  await redis.set(getLinkKey(), JSON.stringify(links))
 }
 
-export async function getLinksByStageId(stageId: string, authHeader?: string): Promise<Link[]> {
-  const links = await getLinksFromRedis(authHeader)
-  return links.filter(l => l.stageId === stageId)
+export async function getLinksByStageId(stageId: string): Promise<Link[]> {
+  const links = await getLinksFromRedis()
+  return links.filter((l) => l.stageId === stageId)
 }
 
-export async function createLink(stageId: string, link: Omit<Link, 'id' | 'stageId' | 'createdAt' | 'updatedAt'>, authHeader?: string): Promise<Link> {
-  const links = await getLinksFromRedis(authHeader)
+export async function createLink(
+  stageId: string,
+  link: Omit<Link, 'id' | 'stageId' | 'createdAt' | 'updatedAt'>,
+): Promise<Link> {
+  const links = await getLinksFromRedis()
   const now = new Date().toISOString()
   const newLink: Link = {
     ...link,
@@ -218,14 +187,15 @@ export async function createLink(stageId: string, link: Omit<Link, 'id' | 'stage
     createdAt: now,
     updatedAt: now,
   }
+
   links.push(newLink)
-  await saveLinksToRedis(links, authHeader)
+  await saveLinksToRedis(links)
   return newLink
 }
 
-export async function updateLink(linkId: string, updates: Partial<Link>, authHeader?: string): Promise<Link | null> {
-  const links = await getLinksFromRedis(authHeader)
-  const linkIndex = links.findIndex(l => l.id === linkId)
+export async function updateLink(linkId: string, updates: Partial<Link>): Promise<Link | null> {
+  const links = await getLinksFromRedis()
+  const linkIndex = links.findIndex((l) => l.id === linkId)
   if (linkIndex === -1) return null
 
   const updated: Link = {
@@ -233,21 +203,22 @@ export async function updateLink(linkId: string, updates: Partial<Link>, authHea
     ...updates,
     updatedAt: new Date().toISOString(),
   }
+
   links[linkIndex] = updated
-  await saveLinksToRedis(links, authHeader)
+  await saveLinksToRedis(links)
   return updated
 }
 
-export async function deleteLink(id: string, authHeader?: string): Promise<boolean> {
-  const links = await getLinksFromRedis(authHeader)
-  const filtered = links.filter(l => l.id !== id)
+export async function deleteLink(linkId: string): Promise<boolean> {
+  const links = await getLinksFromRedis()
+  const filtered = links.filter((l) => l.id !== linkId)
   if (filtered.length === links.length) return false
-  await saveLinksToRedis(filtered, authHeader)
+  await saveLinksToRedis(filtered)
   return true
 }
 
-export async function deleteStageLinks(stageId: string, authHeader?: string): Promise<void> {
-  const links = await getLinksFromRedis(authHeader)
-  const filtered = links.filter(l => l.stageId !== stageId)
-  await saveLinksToRedis(filtered, authHeader)
+export async function deleteStageLinks(stageId: string): Promise<void> {
+  const links = await getLinksFromRedis()
+  const filtered = links.filter((l) => l.stageId !== stageId)
+  await saveLinksToRedis(filtered)
 }
