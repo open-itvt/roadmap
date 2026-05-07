@@ -13,10 +13,12 @@ import {
   FaTrashAlt,
   FaExternalLinkAlt,
   FaStickyNote,
+  FaKey,
 } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { projectsApi, stagesApi } from '@/api/endpoints'
+import { authApi } from '@/api/auth'
 import type { Project, Stage } from '@/types'
 import { renderProjectIcon, renderStageIcon, normalizeProjectIconInput, PROJECT_ICON_COMPONENTS } from '@/utils/icons'
 import {
@@ -142,7 +144,7 @@ function SortableStageItem({
                     : 'border-slate-700/30 bg-slate-800/30 text-slate-300'
             }`}
           >
-            NR{index + 1}
+            {index + 1}
           </span>
         </div>
 
@@ -454,7 +456,7 @@ function ManagementTabContent({
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-semibold text-white">Kolejność</label>
+                      <label className="mb-2 block text-sm font-semibold text-white">Kolejność (ikona będzie przypisana automatycznie)</label>
                       <input
                         type="number"
                         min="1"
@@ -516,7 +518,10 @@ function ManagementTabContent({
 
 export function AdminPanelScreen() {
   const navigate = useNavigate()
-  const { logout } = useAuth()
+  const { logout, adminId, hasPasskey, checkAuth } = useAuth()
+  const [passkeyLoading, setPasskeyLoading] = useState(false)
+  const [passkeyError, setPasskeyError] = useState<string | null>(null)
+  const [passkeySupported, setPasskeySupported] = useState<boolean | null>(null)
   const [projects, setProjects] = useState<Project[]>([])
   const [selectedProject, setSelectedProject] = useState<Project | null>(null)
   const [stages, setStages] = useState<Stage[]>([])
@@ -563,6 +568,118 @@ export function AdminPanelScreen() {
     setIsMobileMenuOpen(false)
   }
 
+  const base64UrlToBuffer = (value: string): ArrayBuffer => {
+    const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
+    const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, '=')
+    const binary = atob(padded)
+    const buffer = new Uint8Array(binary.length)
+    for (let index = 0; index < binary.length; index += 1) {
+      buffer[index] = binary.charCodeAt(index)
+    }
+    return buffer.buffer
+  }
+
+  const bufferToBase64Url = (value: ArrayBuffer): string => {
+    const bytes = new Uint8Array(value)
+    let binary = ''
+    for (const byte of bytes) {
+      binary += String.fromCharCode(byte)
+    }
+    return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')
+  }
+
+  useEffect(() => {
+    let cancelled = false
+
+    const checkPasskeySupport = async () => {
+      const supported =
+        typeof window !== 'undefined' &&
+        window.isSecureContext &&
+        typeof window.PublicKeyCredential !== 'undefined' &&
+        typeof navigator.credentials?.create === 'function'
+
+      if (!supported) {
+        if (!cancelled) {
+          setPasskeySupported(false)
+        }
+        return
+      }
+
+      try {
+        const platformAvailable = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable?.()
+        if (!cancelled) {
+          setPasskeySupported(platformAvailable !== false)
+        }
+      } catch {
+        if (!cancelled) {
+          setPasskeySupported(true)
+        }
+      }
+    }
+
+    void checkPasskeySupport()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const handleRegisterPasskey = async () => {
+    if (!adminId) return
+    setPasskeyLoading(true)
+    setPasskeyError(null)
+
+    try {
+      const start = await authApi.webAuthnStartRegistration(adminId)
+      const challenge = base64UrlToBuffer(start.challenge)
+
+      const publicKey: PublicKeyCredentialCreationOptions = {
+        challenge,
+        rp: { name: 'Roadmap Admin' },
+        user: {
+          id: new TextEncoder().encode(adminId),
+          name: adminId,
+          displayName: adminId,
+        },
+        pubKeyCredParams: [
+          { alg: -7, type: 'public-key' },
+          { alg: -257, type: 'public-key' },
+        ],
+        timeout: start.timeout,
+        authenticatorSelection: { residentKey: 'preferred', userVerification: start.userVerification as UserVerificationRequirement },
+        attestation: (start as any).attestation || 'none',
+      }
+
+      // @ts-ignore
+      const credential = (await navigator.credentials.create({ publicKey })) as PublicKeyCredential
+      if (!credential) {
+        throw new Error('Credential creation cancelled')
+      }
+
+      const attestation = credential.response as AuthenticatorAttestationResponse
+
+      const response = {
+        id: credential.id,
+        rawId: bufferToBase64Url(credential.rawId),
+        response: {
+          clientDataJSON: bufferToBase64Url(attestation.clientDataJSON),
+          attestationObject: bufferToBase64Url(attestation.attestationObject),
+        },
+        type: credential.type,
+      }
+
+      await authApi.webAuthnCompleteRegistration(start.sessionId, response)
+
+      await checkAuth()
+      alert('Passkey zapisany pomyślnie')
+    } catch (err: any) {
+      setPasskeyError((err as Error)?.message || 'Rejestracja passkey nie powiodła się')
+      console.error('passkey registration error', err)
+    } finally {
+      setPasskeyLoading(false)
+    }
+  }
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -579,10 +696,11 @@ export function AdminPanelScreen() {
 
       const reorderedStages = arrayMove(selectedProjectStages, oldIndex, newIndex)
 
-      // Update order in database
+      // Update order and auto-assign icons based on new position
       const updatedStages = reorderedStages.map((stage, index) => ({
         ...stage,
         order: index + 1,
+        icon: String((index + 1).toString()),
       }))
 
       setStages(updatedStages)
@@ -590,7 +708,7 @@ export function AdminPanelScreen() {
       // Save to backend
       void Promise.all(
         updatedStages.map((stage) =>
-          stagesApi.update(selectedProject!.id, stage.id, { order: stage.order })
+          stagesApi.update(selectedProject!.id, stage.id, { order: stage.order, icon: stage.icon })
         )
       )
     }
@@ -778,7 +896,7 @@ export function AdminPanelScreen() {
   }
 
   const handleDeleteProject = async (projectId: string) => {
-    if (!window.confirm('Are you sure?')) return
+    if (!window.confirm('Czy jesteś tego pewien?')) return
     try {
       await projectsApi.delete(projectId)
       const nextProjects = projects.filter((project) => project.id !== projectId)
@@ -792,7 +910,7 @@ export function AdminPanelScreen() {
   }
 
   const handleDeleteStage = async (stageId: string) => {
-    if (!window.confirm('Are you sure?')) return
+    if (!window.confirm('Czy jesteś tego pewien?')) return
     if (!selectedProject) return
     try {
       await stagesApi.delete(selectedProject.id, stageId)
@@ -816,7 +934,15 @@ export function AdminPanelScreen() {
   const handleSaveStageChanges = async () => {
     if (!editingStage || !selectedProject) return
     try {
-      const updated = await stagesApi.update(selectedProject.id, editingStage.id, editingStage)
+      const stageIndex = selectedProjectStages.findIndex((s) => s.id === editingStage.id)
+      const stageNumber = String((stageIndex + 1).toString())
+      
+      const stageWithAutoIcon = {
+        ...editingStage,
+        icon: stageNumber
+      }
+      
+      const updated = await stagesApi.update(selectedProject.id, editingStage.id, stageWithAutoIcon)
       setStages(stages.map((s) => (s.id === updated.id ? updated : s)))
       setEditingStage(null)
     } catch (error) {
@@ -959,6 +1085,27 @@ export function AdminPanelScreen() {
             <FaExternalLinkAlt className="text-slate-400" />
             Demo
           </button>
+
+          {adminId && !hasPasskey && passkeySupported && (
+            <>
+              <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 mt-2">Logowanie</div>
+              <button
+                type="button"
+                onClick={handleRegisterPasskey}
+                disabled={passkeyLoading}
+                className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${passkeyLoading ? 'opacity-60 cursor-wait' : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'}`}
+              >
+                <FaKey className="text-slate-400" />
+                Zapisz passkey
+              </button>
+              {passkeyError && <div className="px-3 text-xs text-red-400">{passkeyError}</div>}
+            </>
+          )}
+          {adminId && !hasPasskey && passkeySupported === false && (
+            <div className="px-3 py-2 text-xs text-slate-500">
+              To urządzenie albo przeglądarka nie wspiera rejestracji passkey.
+            </div>
+          )}
         </div>
       </div>
         </>
