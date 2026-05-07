@@ -19,7 +19,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { renderProjectIcon } from '@/utils/icons'
 import type { Project, Stage } from '@/types'
-import { projectsApi, stagesApi } from '@/api/endpoints'
+import { linksApi, projectsApi, stagesApi } from '@/api/endpoints'
 
 // Sample data for development/demo
 const SAMPLE_PROJECTS: Project[] = [
@@ -358,7 +358,17 @@ function RoadmapContent({ project }: { project: Project }) {
         try {
           const liveStages = await stagesApi.getByProjectId(project.id)
           if (liveStages && liveStages.length > 0) {
-            setStages(liveStages.sort((a, b) => a.order - b.order))
+            const stagesWithLinks = await Promise.all(
+              liveStages.map(async (stage) => {
+                try {
+                  const links = await linksApi.getByStageId(project.id, stage.id)
+                  return { ...stage, links }
+                } catch {
+                  return { ...stage, links: [] }
+                }
+              })
+            )
+            setStages(stagesWithLinks.sort((a, b) => a.order - b.order))
             return
           }
           console.warn('No stages returned from API, falling back to sample data')

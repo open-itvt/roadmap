@@ -17,9 +17,9 @@ import {
 } from 'react-icons/fa'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
-import { projectsApi, stagesApi } from '@/api/endpoints'
+import { projectsApi, stagesApi, linksApi } from '@/api/endpoints'
 import { authApi } from '@/api/auth'
-import type { Project, Stage } from '@/types'
+import type { Link, Project, Stage } from '@/types'
 import { renderProjectIcon, renderStageIcon, normalizeProjectIconInput, PROJECT_ICON_COMPONENTS } from '@/utils/icons'
 import {
   DndContext,
@@ -556,6 +556,20 @@ export function AdminPanelScreen() {
   const [editingProject, setEditingProject] = useState<Project | null>(null)
   const [editingStage, setEditingStage] = useState<Stage | null>(null)
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null)
+  const [selectedLinkStageId, setSelectedLinkStageId] = useState<string>('')
+  const [stageLinks, setStageLinks] = useState<Link[]>([])
+  const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
+  const [linkFormData, setLinkFormData] = useState<{
+    title: string
+    url: string
+    description: string
+    type: Link['type']
+  }>({
+    title: '',
+    url: 'https://',
+    description: '',
+    type: 'other',
+  })
   const [activeTab, setActiveTab] = useState<'management' | 'details' | 'links' | 'settings' | 'notes' | 'demo'>(
     (typeof window !== 'undefined' && localStorage.getItem('roadmap-admin-active-tab')) as 'management' | 'details' | 'links' | 'settings' | 'notes' | 'demo' || 'management'
   )
@@ -745,6 +759,122 @@ export function AdminPanelScreen() {
       setStages(data.sort((a, b) => a.order - b.order))
     } catch (error) {
       console.error('Failed to load stages:', error)
+    }
+  }
+
+  const normalizeLinkUrl = (rawValue: string): string => {
+    const trimmed = rawValue.trim()
+    if (!trimmed) return ''
+    if (/^https?:\/\//i.test(trimmed)) {
+      return trimmed
+    }
+    return `https://${trimmed}`
+  }
+
+  const resetLinkForm = () => {
+    setEditingLinkId(null)
+    setLinkFormData({
+      title: '',
+      url: 'https://',
+      description: '',
+      type: 'other',
+    })
+  }
+
+  const loadLinksForStage = useCallback(async (projectId: string, stageId: string) => {
+    try {
+      const links = await linksApi.getByStageId(projectId, stageId)
+      setStageLinks(links)
+    } catch (error) {
+      console.error('Failed to load links:', error)
+      setStageLinks([])
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!selectedProject) {
+      setSelectedLinkStageId('')
+      setStageLinks([])
+      resetLinkForm()
+      return
+    }
+
+    const currentProjectStages = stages
+      .filter((stage) => stage.projectId === selectedProject.id)
+      .sort((a, b) => a.order - b.order)
+
+    if (currentProjectStages.length === 0) {
+      setSelectedLinkStageId('')
+      setStageLinks([])
+      resetLinkForm()
+      return
+    }
+
+    const selectedStageExists = currentProjectStages.some((stage) => stage.id === selectedLinkStageId)
+    const nextStageId = selectedStageExists ? selectedLinkStageId : currentProjectStages[0].id
+
+    if (nextStageId !== selectedLinkStageId) {
+      setSelectedLinkStageId(nextStageId)
+      return
+    }
+
+    void loadLinksForStage(selectedProject.id, nextStageId)
+  }, [selectedProject, selectedLinkStageId, stages, loadLinksForStage])
+
+  const handleLinkSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+
+    if (!selectedProject || !selectedLinkStageId) return
+
+    const normalizedUrl = normalizeLinkUrl(linkFormData.url)
+    if (!normalizedUrl || !linkFormData.title.trim()) return
+
+    try {
+      if (editingLinkId) {
+        const updated = await linksApi.update(selectedProject.id, selectedLinkStageId, editingLinkId, {
+          title: linkFormData.title.trim(),
+          url: normalizedUrl,
+          description: linkFormData.description.trim(),
+          type: linkFormData.type,
+        })
+        setStageLinks((current) => current.map((link) => (link.id === updated.id ? updated : link)))
+      } else {
+        const created = await linksApi.create(selectedProject.id, selectedLinkStageId, {
+          title: linkFormData.title.trim(),
+          url: normalizedUrl,
+          description: linkFormData.description.trim(),
+          type: linkFormData.type,
+        })
+        setStageLinks((current) => [...current, created])
+      }
+      resetLinkForm()
+    } catch (error) {
+      console.error('Failed to save link:', error)
+    }
+  }
+
+  const handleEditLink = (link: Link) => {
+    setEditingLinkId(link.id)
+    setLinkFormData({
+      title: link.title,
+      url: link.url,
+      description: link.description || '',
+      type: link.type,
+    })
+  }
+
+  const handleDeleteLink = async (linkId: string) => {
+    if (!selectedProject || !selectedLinkStageId) return
+    if (!window.confirm('Czy na pewno chcesz usunąć ten link?')) return
+
+    try {
+      await linksApi.delete(selectedProject.id, selectedLinkStageId, linkId)
+      setStageLinks((current) => current.filter((link) => link.id !== linkId))
+      if (editingLinkId === linkId) {
+        resetLinkForm()
+      }
+    } catch (error) {
+      console.error('Failed to delete link:', error)
     }
   }
 
@@ -1345,10 +1475,153 @@ export function AdminPanelScreen() {
             <div className="space-y-4">
               <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
                 <h3 className="text-lg font-semibold text-white mb-2">Linki etapów</h3>
-                <p className="text-sm text-slate-400 mb-6">Zarządzaj linkami GitHub, demo i innymi zasobami dla poszczególnych etapów.</p>
-                <div className="rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4 text-center">
-                  <p className="text-sm text-slate-400">Funkcionalność wkrótce dostępna</p>
-                </div>
+                <p className="text-sm text-slate-400 mb-6">Dodane tu linki pojawią się na publicznej roadmapie użytkownika pod "/".</p>
+
+                {!selectedProject ? (
+                  <div className="rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4 text-center">
+                    <p className="text-sm text-slate-400">Najpierw wybierz projekt.</p>
+                  </div>
+                ) : selectedProjectStages.length === 0 ? (
+                  <div className="rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4 text-center">
+                    <p className="text-sm text-slate-400">Projekt nie ma etapów. Dodaj etap, aby przypisać link.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-5">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Etap</label>
+                      <select
+                        value={selectedLinkStageId}
+                        onChange={(e) => {
+                          setSelectedLinkStageId(e.target.value)
+                          resetLinkForm()
+                        }}
+                        className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60"
+                      >
+                        {selectedProjectStages.map((stage) => (
+                          <option key={stage.id} value={stage.id}>
+                            {stage.order}. {stage.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <form onSubmit={handleLinkSubmit} className="space-y-4 rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4">
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-white">Tytuł linku</label>
+                        <input
+                          type="text"
+                          value={linkFormData.title}
+                          onChange={(e) => setLinkFormData((current) => ({ ...current, title: e.target.value }))}
+                          placeholder="np. Repozytorium GitHub"
+                          className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
+                          required
+                        />
+                      </div>
+
+                      <div>
+                        <label className="mb-2 block text-sm font-semibold text-white">URL</label>
+                        <input
+                          type="text"
+                          value={linkFormData.url}
+                          onChange={(e) => setLinkFormData((current) => ({ ...current, url: e.target.value }))}
+                          placeholder="https://github.com/..."
+                          className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
+                          required
+                        />
+                      </div>
+
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-white">Typ</label>
+                          <select
+                            value={linkFormData.type}
+                            onChange={(e) => setLinkFormData((current) => ({ ...current, type: e.target.value as Link['type'] }))}
+                            className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60"
+                          >
+                            <option value="github">GitHub</option>
+                            <option value="demo">Demo</option>
+                            <option value="docs">Docs</option>
+                            <option value="other">Other</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="mb-2 block text-sm font-semibold text-white">Opis</label>
+                          <input
+                            type="text"
+                            value={linkFormData.description}
+                            onChange={(e) => setLinkFormData((current) => ({ ...current, description: e.target.value }))}
+                            placeholder="opcjonalnie"
+                            className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        <button
+                          type="submit"
+                          className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400"
+                        >
+                          {editingLinkId ? 'Zapisz link' : 'Dodaj link'}
+                        </button>
+                        {editingLinkId ? (
+                          <button
+                            type="button"
+                            onClick={resetLinkForm}
+                            className="rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]"
+                          >
+                            Anuluj edycję
+                          </button>
+                        ) : null}
+                      </div>
+                    </form>
+
+                    <div className="space-y-3">
+                      {stageLinks.length === 0 ? (
+                        <div className="rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4 text-center">
+                          <p className="text-sm text-slate-400">Brak linków dla tego etapu.</p>
+                        </div>
+                      ) : (
+                        stageLinks.map((link) => (
+                          <div key={link.id} className="rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4">
+                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                              <div className="min-w-0">
+                                <p className="text-sm font-semibold text-white">{link.title}</p>
+                                <a
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="mt-1 block truncate text-xs text-violet-300 hover:text-violet-200"
+                                >
+                                  {link.url}
+                                </a>
+                                {link.description ? <p className="mt-1 text-xs text-slate-400">{link.description}</p> : null}
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() => handleEditLink(link)}
+                                  className="rounded-lg border border-slate-700/80 p-1.5 text-slate-300 transition hover:border-slate-600 hover:bg-white/[0.04]"
+                                  title="Edytuj link"
+                                >
+                                  <FaEdit className="text-xs" />
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => void handleDeleteLink(link.id)}
+                                  className="rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10"
+                                  title="Usuń link"
+                                >
+                                  <FaTrashAlt className="text-xs" />
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           )}
