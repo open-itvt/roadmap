@@ -1,0 +1,984 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AdminPanelScreen = AdminPanelScreen;
+const react_1 = require("react");
+const fa_1 = require("react-icons/fa");
+const react_router_dom_1 = require("react-router-dom");
+const AuthContext_1 = require("@/contexts/AuthContext");
+const endpoints_1 = require("@/api/endpoints");
+const icons_1 = require("@/utils/icons");
+const core_1 = require("@dnd-kit/core");
+const sortable_1 = require("@dnd-kit/sortable");
+const sortable_2 = require("@dnd-kit/sortable");
+const utilities_1 = require("@dnd-kit/utilities");
+const PROJECT_GRADIENTS = [
+    'from-violet-500 to-indigo-500',
+    'from-slate-500 to-slate-700',
+    'from-emerald-500 to-emerald-700',
+    'from-amber-500 to-orange-600',
+];
+function formatDate(value) {
+    return new Date(value).toLocaleDateString('pl-PL');
+}
+function getProjectStatusLabel(status) {
+    switch (status) {
+        case 'active':
+            return 'Aktywny';
+        case 'completed':
+            return 'Zakończony';
+        case 'archived':
+            return 'Archiwum';
+        default:
+            return status;
+    }
+}
+function getStageStatusLabel(status) {
+    switch (status) {
+        case 'completed':
+            return 'Zakończone';
+        case 'in-progress':
+            return 'W trakcie';
+        case 'blocked':
+            return 'Zablokowane';
+        case 'pending':
+        default:
+            return 'Oczekujące';
+    }
+}
+function SortableStageItem({ stage, index, selectedStage, editingStage, setSelectedStage, setEditingStage, handleDeleteStage, }) {
+    const { attributes, listeners, setNodeRef, transform, transition, } = (0, sortable_2.useSortable)({ id: stage.id });
+    const style = {
+        transform: utilities_1.CSS.Transform.toString(transform),
+        transition,
+    };
+    return (<div ref={setNodeRef} style={style} className={`rounded-2xl border-1 p-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)] transition cursor-pointer ${editingStage?.id === stage.id
+            ? 'border-violet-400/45 bg-violet-500/15'
+            : selectedStage?.id === stage.id
+                ? 'border-blue-400/45 bg-blue-500/15'
+                : 'border-slate-800/80 bg-[#0f141b] hover:border-slate-700/80'}`} onClick={() => {
+            if (selectedStage?.id === stage.id) {
+                setEditingStage(stage);
+            }
+            else {
+                setSelectedStage(stage);
+                setEditingStage(null);
+            }
+        }}>
+      <div className="flex items-start gap-3">
+        <div className="flex-shrink-0">
+          <span className={`grid h-10 w-10 place-items-center rounded-full border text-sm font-semibold ${stage.status === 'completed'
+            ? 'border-green-600/30 bg-green-900/30 text-green-200'
+            : stage.status === 'in-progress'
+                ? 'border-amber-600/30 bg-amber-900/30 text-amber-200'
+                : stage.status === 'blocked'
+                    ? 'border-orange-500/30 bg-orange-900/30 text-orange-200'
+                    : 'border-slate-700/30 bg-slate-800/30 text-slate-300'}`}>
+            NR{index + 1}
+          </span>
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="text-sm font-semibold text-white">{stage.name}</h3>
+            <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${stage.status === 'completed'
+            ? 'border-green-600/20 bg-green-900/30 text-green-200'
+            : stage.status === 'in-progress'
+                ? 'border-amber-600/20 bg-amber-900/30 text-amber-200'
+                : stage.status === 'blocked'
+                    ? 'border-orange-500/20 bg-orange-900/30 text-orange-200'
+                    : 'border-slate-700/20 bg-slate-800/30 text-slate-300'}`}>
+              {getStageStatusLabel(stage.status)}
+            </span>
+          </div>
+          <p className="text-xs text-slate-400 mb-2">{stage.description}</p>
+          {stage.progress ? <div className="text-xs text-slate-500 mb-1">Postęp: {stage.progress}%</div> : null}
+          <div className="text-xs text-slate-500">{formatDate(stage.createdAt)}</div>
+        </div>
+
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          <button type="button" className="rounded-lg border border-slate-700/80 p-1.5 text-slate-300 transition hover:border-slate-600 hover:bg-white/[0.04]" {...attributes} {...listeners} title="Przeciągnij, aby zmienić kolejność">
+            <fa_1.FaListUl className="text-xs"/>
+          </button>
+          <button type="button" className="rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10" onClick={(e) => {
+            e.stopPropagation();
+            void handleDeleteStage(stage.id);
+        }} title="Usuń etap">
+            <fa_1.FaTrashAlt className="text-xs"/>
+          </button>
+        </div>
+      </div>
+    </div>);
+}
+function ManagementTabContent({ projects, stages, selectedProject, setSelectedProject, resetProjectForm, resetStageForm, handleDuplicateProject, handleDeleteProject, handleDeleteStage, selectedProjectStages, editingStage, setEditingStage, handleSaveStageChanges, sensors, handleDragEnd, selectedStage, setSelectedStage, }) {
+    const stageCountByProject = (projectId) => stages.filter((s) => s.projectId === projectId).length;
+    return (<div className="space-y-6 pb-10">
+      {/* Projects section */}
+      <section className="space-y-4">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-base sm:text-lg font-semibold text-white">Projekty</h2>
+            <p className="mt-0.5 text-xs sm:text-sm text-slate-400">Zarządzaj wszystkimi projektami</p>
+          </div>
+          <button onClick={() => resetProjectForm()} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400 flex-shrink-0">
+            <fa_1.FaPlus className="text-sm"/>
+            <span>Dodaj projekt</span>
+          </button>
+        </div>
+
+        {projects.length === 0 ? (<div className="flex min-h-64 items-center justify-center rounded-2xl border border-slate-800/80 bg-[#0f141b]">
+            <p className="text-slate-400">Brak projektów. Utwórz swój pierwszy projekt.</p>
+          </div>) : (<div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+            {projects.map((project, index) => {
+                const stageCount = stageCountByProject(project.id);
+                return (<div key={project.id} onClick={() => setSelectedProject(project)} className={`cursor-pointer rounded-2xl border-1 transition ${selectedProject?.id === project.id
+                        ? 'border-violet-400/45 bg-violet-500/15'
+                        : 'border-slate-800/80 bg-[#0f141b] hover:border-slate-700/80'} p-4 shadow-[0_12px_28px_rgba(0,0,0,0.18)]`}>
+                  <div className="flex items-start justify-between gap-2 mb-2">
+                    <span className={`grid h-8 w-8 sm:h-10 sm:w-10 place-items-center rounded-lg sm:rounded-xl bg-gradient-to-br ${PROJECT_GRADIENTS[index % PROJECT_GRADIENTS.length]} text-white shadow-lg shadow-black/20 flex-shrink-0`}>
+                      {(0, icons_1.renderProjectIcon)(project.icon)}
+                    </span>
+                    <span className={`rounded-full border px-2 py-1 text-[10px] font-semibold ${project.status === 'active'
+                        ? 'border-emerald-500/20 bg-emerald-500/12 text-emerald-300'
+                        : project.status === 'completed'
+                            ? 'border-sky-500/20 bg-sky-500/12 text-sky-300'
+                            : 'border-slate-500/20 bg-slate-500/15 text-slate-300'}`}>
+                      {getProjectStatusLabel(project.status)}
+                    </span>
+                  </div>
+                  <h3 className="text-xs sm:text-sm font-semibold text-white mb-1 truncate">{project.name}</h3>
+                  <p className="line-clamp-2 text-xs text-slate-400 mb-3">{project.description}</p>
+
+                  <div className="mb-4 grid grid-cols-2 gap-2">
+                    <div className="rounded-lg border border-slate-800/50 bg-white/[0.03] px-2 py-1.5">
+                      <div className="text-[9px] uppercase tracking-[0.1em] text-slate-500">Etapy</div>
+                      <div className="mt-0.5 text-sm font-semibold text-white">{stageCount}</div>
+                    </div>
+                    <div className="rounded-lg border border-slate-800/50 bg-white/[0.03] px-2 py-1.5">
+                      <div className="text-[9px] uppercase tracking-[0.1em] text-slate-500">Data</div>
+                      <div className="mt-0.5 text-sm font-semibold text-white">{formatDate(project.createdAt)}</div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <button type="button" className="flex-1 rounded-lg border border-slate-700/80 p-1.5 text-slate-300 transition hover:border-slate-600 hover:bg-white/[0.04]" onClick={(e) => {
+                        e.stopPropagation();
+                        resetProjectForm(project);
+                    }} title="Edytuj projekt">
+                      <fa_1.FaEdit className="mx-auto"/>
+                    </button>
+                    <button type="button" className="flex-1 rounded-lg border border-slate-700/80 p-1.5 text-slate-300 transition hover:border-slate-600 hover:bg-white/[0.04]" onClick={(e) => {
+                        e.stopPropagation();
+                        void handleDuplicateProject(project);
+                    }} title="Powiel projekt">
+                      <fa_1.FaClone className="mx-auto"/>
+                    </button>
+                    <button type="button" className="flex-1 rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10" onClick={(e) => {
+                        e.stopPropagation();
+                        void handleDeleteProject(project.id);
+                    }} title="Usuń projekt">
+                      <fa_1.FaTrashAlt className="mx-auto"/>
+                    </button>
+                  </div>
+                </div>);
+            })}
+          </div>)}
+      </section>
+
+      {/* Stages section - only show if project is selected */}
+      {selectedProject && (<section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-semibold text-white">Etapy</h2>
+            <p className="mt-1 text-sm text-slate-400">
+              {selectedProject
+                ? `Zarządzaj etapami dla "${selectedProject.name}"`
+                : 'Wybierz projekt, aby zarządzać etapami'}
+            </p>
+          </div>
+          <button onClick={() => resetStageForm()} disabled={!selectedProject} className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400 disabled:cursor-not-allowed disabled:opacity-50">
+            <fa_1.FaPlus />
+            <span>Dodaj etap</span>
+          </button>
+        </div>
+
+        {!selectedProject ? (<div className="flex min-h-64 items-center justify-center rounded-2xl border border-slate-800/80 bg-[#0f141b]">
+            <p className="text-slate-400">Wybierz projekt z listy po lewej, aby zarządzać etapami</p>
+          </div>) : selectedProjectStages.length === 0 ? (<div className="flex min-h-64 items-center justify-center rounded-2xl border border-slate-800/80 bg-[#0f141b]">
+            <p className="text-slate-400">Ten projekt nie ma jeszcze etapów</p>
+          </div>) : (<div className="space-y-4">
+            {editingStage ? (<div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <fa_1.FaEdit className="text-violet-300"/>
+                    <span className="text-sm font-semibold text-slate-300">Edytuj etap</span>
+                  </div>
+                  <button onClick={() => setEditingStage(null)} className="text-slate-400 hover:text-slate-300">×</button>
+                </div>
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Nazwa etapu</label>
+                    <input type="text" value={editingStage.name} onChange={(e) => setEditingStage({ ...editingStage, name: e.target.value })} className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"/>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Opis</label>
+                    <textarea value={editingStage.description} onChange={(e) => setEditingStage({ ...editingStage, description: e.target.value })} className="w-full resize-none rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]" rows={2}/>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Status</label>
+                      <select value={editingStage.status} onChange={(e) => setEditingStage({ ...editingStage, status: e.target.value })} className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60">
+                        <option value="pending">Oczekujące</option>
+                        <option value="in-progress">W trakcie</option>
+                        <option value="completed">Zakończone</option>
+                        <option value="blocked">Zablokowane</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Postęp (%)</label>
+                      <input type="number" min="0" max="100" value={editingStage.progress || 0} onChange={(e) => setEditingStage({ ...editingStage, progress: parseInt(e.target.value) || 0 })} className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Ikona / skrót</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['check', 'dot', '1', '2', '3', '4', '5'].map((option) => (<button key={option} type="button" onClick={() => setEditingStage({ ...editingStage, icon: option })} className={`flex h-9 w-9 items-center justify-center rounded-lg border text-sm font-medium transition ${editingStage.icon === option
+                            ? 'border-violet-400 bg-violet-500/20 text-violet-300'
+                            : 'border-slate-700/30 bg-white/[0.03] text-slate-400 hover:border-slate-700/50 hover:bg-white/[0.05] hover:text-slate-300'}`} title={option}>
+                            {(0, icons_1.renderStageIcon)(option)}
+                          </button>))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Kolejność</label>
+                      <input type="number" min="1" value={editingStage.order} onChange={(e) => setEditingStage({ ...editingStage, order: parseInt(e.target.value) || 1 })} className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]"/>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button onClick={handleSaveStageChanges} className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400">
+                      Zapisz zmiany
+                    </button>
+                    <button onClick={() => setEditingStage(null)} className="flex-1 rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]">
+                      Anuluj
+                    </button>
+                  </div>
+                </div>
+              </div>) : null}
+
+            <core_1.DndContext sensors={sensors} collisionDetection={core_1.closestCenter} onDragEnd={handleDragEnd}>
+              <sortable_1.SortableContext items={selectedProjectStages.map(s => s.id)} strategy={sortable_1.verticalListSortingStrategy}>
+                {selectedProjectStages.map((stage, index) => (<SortableStageItem key={stage.id} stage={stage} index={index} selectedStage={selectedStage} editingStage={editingStage} setSelectedStage={setSelectedStage} setEditingStage={setEditingStage} handleDeleteStage={handleDeleteStage}/>))}
+              </sortable_1.SortableContext>
+            </core_1.DndContext>
+          </div>)}
+      </section>)}
+    </div>);
+}
+function AdminPanelScreen() {
+    const navigate = (0, react_router_dom_1.useNavigate)();
+    const { logout } = (0, AuthContext_1.useAuth)();
+    const [projects, setProjects] = (0, react_1.useState)([]);
+    const [selectedProject, setSelectedProject] = (0, react_1.useState)(null);
+    const [stages, setStages] = (0, react_1.useState)([]);
+    const [loading, setLoading] = (0, react_1.useState)(true);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = (0, react_1.useState)(false);
+    const [showNewProjectForm, setShowNewProjectForm] = (0, react_1.useState)(false);
+    const [showNewStageForm, setShowNewStageForm] = (0, react_1.useState)(false);
+    const [projectFormMode, setProjectFormMode] = (0, react_1.useState)('create');
+    const [projectFormProjectId, setProjectFormProjectId] = (0, react_1.useState)(null);
+    const [stageFormMode, setStageFormMode] = (0, react_1.useState)('create');
+    const [stageFormStageId, setStageFormStageId] = (0, react_1.useState)(null);
+    const [newProjectData, setNewProjectData] = (0, react_1.useState)({
+        name: '',
+        description: '',
+        icon: 'rocket',
+        privateNotes: '',
+        priority: 'medium',
+        progress: 0,
+        startDate: new Date().toISOString().split('T')[0],
+        lastUpdate: new Date().toISOString(),
+        teamSize: 0,
+        technologies: [],
+        goals: [],
+        status: 'active',
+    });
+    const [newStageData, setNewStageData] = (0, react_1.useState)({
+        name: '',
+        description: '',
+        status: 'pending',
+        icon: '',
+    });
+    const [editingProject, setEditingProject] = (0, react_1.useState)(null);
+    const [editingStage, setEditingStage] = (0, react_1.useState)(null);
+    const [selectedStage, setSelectedStage] = (0, react_1.useState)(null);
+    const [activeTab, setActiveTab] = (0, react_1.useState)((typeof window !== 'undefined' && localStorage.getItem('roadmap-admin-active-tab')) || 'management');
+    const handleTabChange = (tab) => {
+        setActiveTab(tab);
+        if (typeof window !== 'undefined') {
+            localStorage.setItem('roadmap-admin-active-tab', tab);
+        }
+        setIsMobileMenuOpen(false);
+    };
+    const sensors = (0, core_1.useSensors)((0, core_1.useSensor)(core_1.PointerSensor), (0, core_1.useSensor)(core_1.KeyboardSensor, {
+        coordinateGetter: sortable_1.sortableKeyboardCoordinates,
+    }));
+    const handleDragEnd = (event) => {
+        const { active, over } = event;
+        if (over && active.id !== over.id) {
+            const oldIndex = selectedProjectStages.findIndex((stage) => stage.id === active.id);
+            const newIndex = selectedProjectStages.findIndex((stage) => stage.id === over.id);
+            const reorderedStages = (0, sortable_1.arrayMove)(selectedProjectStages, oldIndex, newIndex);
+            // Update order in database
+            const updatedStages = reorderedStages.map((stage, index) => ({
+                ...stage,
+                order: index + 1,
+            }));
+            setStages(updatedStages);
+            // Save to backend
+            void Promise.all(updatedStages.map((stage) => endpoints_1.stagesApi.update(selectedProject.id, stage.id, { order: stage.order })));
+        }
+    };
+    (0, react_1.useEffect)(() => {
+        if (selectedProject) {
+            void loadStages(selectedProject.id);
+            setEditingProject(selectedProject);
+        }
+    }, [selectedProject]);
+    const loadProjects = (0, react_1.useCallback)(async () => {
+        try {
+            const data = await endpoints_1.projectsApi.getAll();
+            setProjects(data);
+            if (data.length > 0 && !selectedProject) {
+                setSelectedProject(data[0]);
+            }
+        }
+        catch (error) {
+            console.error('Failed to load projects:', error);
+        }
+        finally {
+            setLoading(false);
+        }
+    }, [selectedProject]);
+    (0, react_1.useEffect)(() => {
+        void loadProjects();
+    }, [loadProjects]);
+    const loadStages = async (projectId) => {
+        try {
+            const data = await endpoints_1.stagesApi.getByProjectId(projectId);
+            setStages(data.sort((a, b) => a.order - b.order));
+        }
+        catch (error) {
+            console.error('Failed to load stages:', error);
+        }
+    };
+    const handleLogout = async () => {
+        await logout();
+        navigate('/auth/login', { replace: true });
+    };
+    const resetProjectForm = (project) => {
+        if (project) {
+            setProjectFormMode('edit');
+            setProjectFormProjectId(project.id);
+            setNewProjectData({
+                name: project.name,
+                description: project.description,
+                icon: project.icon,
+                privateNotes: project.privateNotes || '',
+                priority: project.priority,
+                progress: project.progress,
+                startDate: project.startDate,
+                lastUpdate: project.lastUpdate,
+                teamSize: project.teamSize,
+                technologies: [...project.technologies],
+                goals: [...project.goals],
+                status: project.status,
+            });
+        }
+        else {
+            setProjectFormMode('create');
+            setProjectFormProjectId(null);
+            setNewProjectData({
+                name: '',
+                description: '',
+                icon: 'rocket',
+                privateNotes: '',
+                priority: 'medium',
+                progress: 0,
+                startDate: new Date().toISOString().split('T')[0],
+                lastUpdate: new Date().toISOString(),
+                teamSize: 0,
+                technologies: [],
+                goals: [],
+                status: 'active',
+            });
+        }
+        setShowNewProjectForm(true);
+    };
+    const resetStageForm = (stage) => {
+        if (stage) {
+            setStageFormMode('edit');
+            setStageFormStageId(stage.id);
+            setNewStageData({
+                name: stage.name,
+                description: stage.description,
+                status: stage.status,
+                icon: stage.icon,
+            });
+        }
+        else {
+            setStageFormMode('create');
+            setStageFormStageId(null);
+            setNewStageData({ name: '', description: '', status: 'pending', icon: '' });
+        }
+        setShowNewStageForm(true);
+    };
+    const closeProjectForm = () => {
+        setShowNewProjectForm(false);
+        setProjectFormMode('create');
+        setProjectFormProjectId(null);
+    };
+    const closeStageForm = () => {
+        setShowNewStageForm(false);
+        setStageFormMode('create');
+        setStageFormStageId(null);
+    };
+    const handleProjectFormSubmit = async (e) => {
+        e.preventDefault();
+        const normalizedIcon = (0, icons_1.normalizeProjectIconInput)(newProjectData.icon);
+        try {
+            if (projectFormMode === 'edit' && projectFormProjectId) {
+                const updatedProject = await endpoints_1.projectsApi.update(projectFormProjectId, {
+                    ...newProjectData,
+                    icon: normalizedIcon,
+                });
+                setProjects(projects.map((project) => (project.id === projectFormProjectId ? updatedProject : project)));
+                if (selectedProject?.id === projectFormProjectId) {
+                    setSelectedProject(updatedProject);
+                }
+            }
+            else {
+                const newProject = await endpoints_1.projectsApi.create({
+                    ...newProjectData,
+                    icon: normalizedIcon,
+                    status: newProjectData.status,
+                });
+                setProjects([...projects, newProject]);
+            }
+            closeProjectForm();
+        }
+        catch (error) {
+            console.error('Failed to save project:', error);
+        }
+    };
+    const handleStageFormSubmit = async (e) => {
+        e.preventDefault();
+        if (!selectedProject)
+            return;
+        try {
+            if (stageFormMode === 'edit' && stageFormStageId) {
+                const updatedStage = await endpoints_1.stagesApi.update(selectedProject.id, stageFormStageId, {
+                    ...newStageData,
+                });
+                setStages(stages.map((stage) => (stage.id === stageFormStageId ? updatedStage : stage)));
+            }
+            else {
+                const newStage = await endpoints_1.stagesApi.create(selectedProject.id, {
+                    ...newStageData,
+                    order: stages.length,
+                });
+                setStages([...stages, newStage]);
+            }
+            closeStageForm();
+        }
+        catch (error) {
+            console.error('Failed to save stage:', error);
+        }
+    };
+    const handleDuplicateProject = async (project) => {
+        try {
+            const duplicatedProject = await endpoints_1.projectsApi.create({
+                name: `${project.name} (kopia)`,
+                description: project.description,
+                icon: project.icon,
+                privateNotes: '',
+                status: project.status,
+                priority: project.priority,
+                progress: project.progress,
+                startDate: project.startDate,
+                lastUpdate: new Date().toISOString(),
+                teamSize: project.teamSize,
+                technologies: [...project.technologies],
+                goals: [...project.goals],
+            });
+            setProjects([...projects, duplicatedProject]);
+        }
+        catch (error) {
+            console.error('Failed to duplicate project:', error);
+        }
+    };
+    const handleDeleteProject = async (projectId) => {
+        if (!window.confirm('Czy jesteś tego pewien?'))
+            return;
+        try {
+            await endpoints_1.projectsApi.delete(projectId);
+            const nextProjects = projects.filter((project) => project.id !== projectId);
+            setProjects(nextProjects);
+            if (selectedProject?.id === projectId) {
+                setSelectedProject(nextProjects[0] || null);
+            }
+        }
+        catch (error) {
+            console.error('Failed to delete project:', error);
+        }
+    };
+    const handleDeleteStage = async (stageId) => {
+        if (!window.confirm('Czy jesteś tego pewien?'))
+            return;
+        if (!selectedProject)
+            return;
+        try {
+            await endpoints_1.stagesApi.delete(selectedProject.id, stageId);
+            setStages(stages.filter((stage) => stage.id !== stageId));
+        }
+        catch (error) {
+            console.error('Failed to delete stage:', error);
+        }
+    };
+    const handleSaveProjectChanges = async () => {
+        if (!editingProject)
+            return;
+        try {
+            const updated = await endpoints_1.projectsApi.update(editingProject.id, editingProject);
+            setSelectedProject(updated);
+            setProjects(projects.map((p) => (p.id === updated.id ? updated : p)));
+        }
+        catch (error) {
+            console.error('Failed to save project:', error);
+        }
+    };
+    const handleSaveStageChanges = async () => {
+        if (!editingStage || !selectedProject)
+            return;
+        try {
+            const updated = await endpoints_1.stagesApi.update(selectedProject.id, editingStage.id, editingStage);
+            setStages(stages.map((s) => (s.id === updated.id ? updated : s)));
+            setEditingStage(null);
+        }
+        catch (error) {
+            console.error('Failed to save stage:', error);
+        }
+    };
+    const selectedProjectStages = selectedProject ? stages.filter((stage) => stage.projectId === selectedProject.id) : [];
+    const sidebarContent = (<>
+      <div className="border-b border-[#1b2330] px-6 py-5">
+        <div className="flex items-center gap-3">
+          <div className="grid h-9 w-9 place-items-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 text-white shadow-lg shadow-indigo-500/25">
+            <span className="text-sm font-bold">R</span>
+          </div>
+          <div>
+            <div className="text-base font-semibold tracking-tight text-white">Roadmap Admin</div>
+            <div className="text-xs text-slate-400">Zarządzanie roadmapą</div>
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 py-4">
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Zarządzanie</div>
+        <div className="space-y-1.5">
+          <button type="button" onClick={() => handleTabChange('management')} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeTab === 'management'
+            ? 'border border-violet-400/30 bg-violet-500/18 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.15)]'
+            : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'}`}>
+            <fa_1.FaListUl className="text-violet-200"/>
+            Projekty
+          </button>
+          <a href="/" className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5">
+            <fa_1.FaGlobe className="text-slate-400"/>
+            Podgląd (publiczny)
+            <span className="ml-auto text-slate-500">↗</span>
+          </a>
+        </div>
+      </div>
+
+      {selectedProject && (<>
+      <div className="px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Bieżący projekt</div>
+      <div className="px-3">
+        <button type="button" onClick={() => setSelectedProject(selectedProject)} className="flex w-full items-center gap-3 rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 py-2.5 text-left transition hover:border-slate-700/40 hover:bg-white/[0.05]">
+          <span className={`grid h-8 w-8 place-items-center rounded-lg bg-gradient-to-br ${PROJECT_GRADIENTS[0]} text-white shadow-lg shadow-violet-500/20`}>
+            {(0, icons_1.renderProjectIcon)(selectedProject?.icon || '')}
+          </span>
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-sm font-medium text-white">{selectedProject?.name || 'Wybierz projekt'}</span>
+          </span>
+          <fa_1.FaChevronDown className="text-slate-400"/>
+        </button>
+      </div>
+
+      <div className="px-3 py-4">
+        <div className="space-y-1.5">
+          <button type="button" onClick={() => handleTabChange('management')} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeTab === 'management'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'}`}>
+            <fa_1.FaListUl className="text-violet-200"/>
+            Etapy
+          </button>
+          <button type="button" onClick={() => handleTabChange('details')} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeTab === 'details'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'}`}>
+            <fa_1.FaInfoCircle className="text-slate-400"/>
+            Szczegóły projektu
+          </button>
+          <button type="button" onClick={() => handleTabChange('links')} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeTab === 'links'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'}`}>
+            <fa_1.FaCode className="text-slate-400"/>
+            Linki (GitHub)
+          </button>
+          <button type="button" onClick={() => handleTabChange('settings')} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeTab === 'settings'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'}`}>
+            <fa_1.FaCogs className="text-slate-400"/>
+            Ustawienia
+          </button>
+          <button type="button" onClick={() => handleTabChange('notes')} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeTab === 'notes'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'}`}>
+            <fa_1.FaStickyNote className="text-slate-400"/>
+            Prywatne notatki
+          </button>
+          <button type="button" onClick={() => handleTabChange('demo')} className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${activeTab === 'demo'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'}`}>
+            <fa_1.FaExternalLinkAlt className="text-slate-400"/>
+            Demo
+          </button>
+        </div>
+      </div>
+        </>)}
+      <div className="mt-auto border-t border-slate-700/30 p-4">
+        <button type="button" onClick={handleLogout} className="w-full rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-700/40 hover:bg-white/[0.05]">
+          Wyloguj
+        </button>
+      </div>
+    </>);
+    if (loading) {
+        return (<div className="flex min-h-screen items-center justify-center bg-slate-950">
+        <div className="text-center">
+          <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-4 border-slate-700 border-t-blue-500"/>
+          <p className="text-slate-400">Loading...</p>
+        </div>
+      </div>);
+    }
+    return (<div className="min-h-screen bg-[#0a0d12] text-slate-100 flex flex-col lg:flex-row">
+      {/* Sidebar */}
+      <aside className="hidden lg:flex w-72 flex-shrink-0 flex-col border-r border-slate-800/80 bg-[#0b1118] lg:sticky lg:top-0 lg:h-screen lg:overflow-hidden">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile overlay sidebar */}
+      {isMobileMenuOpen && (<div className="fixed inset-0 z-50 lg:hidden">
+          <button type="button" className="absolute inset-0 bg-black/65" onClick={() => setIsMobileMenuOpen(false)} aria-label="Close navigation backdrop"/>
+          <aside className="absolute inset-y-0 left-0 flex h-full w-[86vw] max-w-sm flex-col border-r border-slate-800/80 bg-[#0b1118] shadow-2xl shadow-black/60">
+            {sidebarContent}
+          </aside>
+        </div>)}
+
+      {/* Main content */}
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto w-full max-w-4xl px-3 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-8">
+          {/* Mobile top bar */}
+          <div className="mb-4 flex items-start justify-between gap-3 lg:hidden">
+            <button type="button" onClick={() => setIsMobileMenuOpen(true)} className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100 flex-shrink-0" aria-label="Open navigation">
+              <fa_1.FaBars />
+            </button>
+            <div className="flex flex-row items-center gap-2">
+              <div className="min-w-0 text-right flex-1">
+                <div className="text-sm font-semibold text-white">Roadmap Admin</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Header */}
+          <div className="mb-6 hidden flex-col gap-4 sm:flex-row sm:items-center sm:justify-between lg:flex">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">Roadmap Admin</h1>
+              <p className="mt-1 text-sm text-slate-400">Zarządzaj projektami i etapami roadmapy</p>
+            </div>
+          </div>
+
+          {/* Tab content */}
+          {activeTab === 'management' && (<ManagementTabContent projects={projects} stages={stages} selectedProject={selectedProject} setSelectedProject={setSelectedProject} resetProjectForm={resetProjectForm} resetStageForm={resetStageForm} handleDuplicateProject={handleDuplicateProject} handleDeleteProject={handleDeleteProject} handleDeleteStage={handleDeleteStage} selectedProjectStages={selectedProjectStages} editingStage={editingStage} setEditingStage={setEditingStage} handleSaveStageChanges={handleSaveStageChanges} sensors={sensors} handleDragEnd={handleDragEnd} selectedStage={selectedStage} setSelectedStage={setSelectedStage}/>)}
+
+          {activeTab === 'details' && editingProject && (<div className="space-y-6 pb-10">
+              <section className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <div className="mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <fa_1.FaEdit className="text-violet-300"/>
+                    <span className="text-sm font-semibold text-slate-300">Edytuj projekt</span>
+                  </div>
+                </div>
+
+                <div className="space-y-5">
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Nazwa</label>
+                    <input type="text" value={editingProject.name} onChange={(e) => setEditingProject({ ...editingProject, name: e.target.value })} className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"/>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Opis</label>
+                    <textarea value={editingProject.description} onChange={(e) => setEditingProject({ ...editingProject, description: e.target.value })} className="w-full resize-none rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85" rows={3}/>
+                  </div>
+
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Status</label>
+                      <select value={editingProject.status} onChange={(e) => setEditingProject({ ...editingProject, status: e.target.value })} className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-5 py-3 text-white outline-none transition focus:border-violet-400/60">
+                        <option value="active">Aktywny</option>
+                        <option value="completed">Ukończony</option>
+                        <option value="archived">Zarchiwizowany</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Priorytet</label>
+                      <select value={editingProject.priority} onChange={(e) => setEditingProject({ ...editingProject, priority: e.target.value })} className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60">
+                        <option value="high">Wysoki</option>
+                        <option value="medium">Średni</option>
+                        <option value="low">Niski</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Postęp (%)</label>
+                      <input type="number" min="0" max="100" value={editingProject.progress} onChange={(e) => setEditingProject({ ...editingProject, progress: parseInt(e.target.value) || 0 })} className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Rozmiar zespołu</label>
+                      <input type="number" min="0" value={editingProject.teamSize} onChange={(e) => setEditingProject({ ...editingProject, teamSize: parseInt(e.target.value) || 0 })} className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"/>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-semibold text-white">Data startu</label>
+                      <input type="date" value={editingProject.startDate} onChange={(e) => setEditingProject({ ...editingProject, startDate: e.target.value })} className="w-full rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85"/>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Technologie (oddzielone przecinkami)</label>
+                    <textarea value={editingProject.technologies.join(', ')} onChange={(e) => setEditingProject({ ...editingProject, technologies: e.target.value.split(',').map((t) => t.trim()).filter((t) => t) })} placeholder="React, TypeScript, Node.js" className="w-full resize-none rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85" rows={2}/>
+                  </div>
+
+                  <div>
+                    <label className="mb-2 block text-sm font-semibold text-white">Cele projektu (każdy cel w nowej linii)</label>
+                    <textarea value={editingProject.goals.join('\n')} onChange={(e) => setEditingProject({ ...editingProject, goals: e.target.value.split('\n').filter((g) => g.trim()) })} placeholder="Cel 1&#10;Cel 2&#10;Cel 3" className="w-full resize-none rounded-xl border border-slate-600/50 bg-slate-900/70 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-slate-900/85" rows={3}/>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button onClick={handleSaveProjectChanges} className="flex-1 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-3 font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400">
+                      Zapisz zmiany
+                    </button>
+                    <button onClick={() => setEditingProject(selectedProject)} className="flex-1 rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]">
+                      Anuluj
+                    </button>
+                  </div>
+                </div>
+              </section>
+            </div>)}
+
+          {activeTab === 'links' && (<div className="space-y-4">
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h3 className="text-lg font-semibold text-white mb-2">Linki etapów</h3>
+                <p className="text-sm text-slate-400 mb-6">Zarządzaj linkami GitHub, demo i innymi zasobami dla poszczególnych etapów.</p>
+                <div className="rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4 text-center">
+                  <p className="text-sm text-slate-400">Funkcionalność wkrótce dostępna</p>
+                </div>
+              </div>
+            </div>)}
+
+          {activeTab === 'settings' && selectedProject && (<div className="space-y-4">
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h3 className="text-lg font-semibold text-white mb-2">Ustawienia projektu</h3>
+                <p className="text-sm text-slate-400 mb-6">{selectedProject.name}</p>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-2xl border border-slate-700/20 bg-white/[0.02] p-4">
+                    <div className="text-xs font-semibold text-slate-400 mb-2 uppercase">Status</div>
+                    <p className="text-sm text-white capitalize">{selectedProject.status === 'active' ? 'Aktywny' : selectedProject.status === 'completed' ? 'Ukończony' : 'Zarchiwizowany'}</p>
+                  </div>
+                  <div className="rounded-2xl border border-slate-700/20 bg-white/[0.02] p-4">
+                    <div className="text-xs font-semibold text-slate-400 mb-2 uppercase">Priorytet</div>
+                    <p className="text-sm text-white capitalize">{selectedProject.priority === 'high' ? 'Wysoki' : selectedProject.priority === 'medium' ? 'Średni' : 'Niski'}</p>
+                  </div>
+                </div>
+              </div>
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h4 className="text-sm font-semibold text-slate-300 mb-3">Szybkie akcje</h4>
+                <div className="flex gap-2 flex-wrap">
+                  <button onClick={() => resetProjectForm(selectedProject)} className="inline-flex items-center gap-2 rounded-xl bg-slate-700/30 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700/50">
+                    <fa_1.FaEdit className="text-sm"/>
+                    <span>Edytuj projekt</span>
+                  </button>
+                  <button onClick={() => handleDuplicateProject(selectedProject)} className="inline-flex items-center gap-2 rounded-xl bg-slate-700/30 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700/50">
+                    <fa_1.FaClone className="text-sm"/>
+                    <span>Duplikuj</span>
+                  </button>
+                </div>
+              </div>
+            </div>)}
+
+          {activeTab === 'notes' && selectedProject && (<div className="space-y-4 pb-10">
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <div className="mb-4 flex items-center gap-2">
+                  <fa_1.FaStickyNote className="text-violet-300"/>
+                  <h3 className="text-lg font-semibold text-white">Prywatne notatki</h3>
+                </div>
+                <p className="mb-6 text-sm text-slate-400">
+                  Notatki są widoczne tylko w panelu admina i nie pojawiają się na publicznej stronie roadmapy.
+                </p>
+                <div className="space-y-4">
+                  <textarea value={editingProject?.privateNotes || ''} onChange={(e) => setEditingProject((current) => (current ? { ...current, privateNotes: e.target.value } : current))} placeholder="Zapisz tu ważne informacje o projekcie, decyzje zespołu, ryzyka albo przypomnienia dla siebie..." className="min-h-48 w-full rounded-xl border border-slate-600/50 bg-gray-950 px-4 py-3 text-sm leading-6 text-white placeholder:text-slate-500 outline-none transition focus:border-violet-400/60 focus:bg-gray-900"/>
+                  <div className="flex gap-3">
+                    <button onClick={handleSaveProjectChanges} className="rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400">
+                      Zapisz notatki
+                    </button>
+                    <button onClick={() => setEditingProject(selectedProject)} className="rounded-xl border border-slate-700/30 bg-white/[0.03] px-4 py-3 text-sm font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]">
+                      Cofnij zmiany
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>)}
+
+          {activeTab === 'demo' && (<div className="space-y-4">
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h2 className="text-lg sm:text-xl font-semibold text-white mb-2">Podgląd publiczny</h2>
+                <p className="text-sm text-slate-400 mb-4">Przejdź do publicznego widoku roadmapy, aby zobaczyć jak wyglądają Twoje projekty dla użytkowników.</p>
+                <a href="/demo" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400">
+                  <fa_1.FaGlobe />
+                  <span>Otwórz podgląd</span>
+                  <span className="ml-1">↗</span>
+                </a>
+              </div>
+              <div className="rounded-3xl border border-slate-700/20 bg-white/[0.03] p-6 sm:p-8">
+                <h3 className="text-sm font-semibold text-slate-300 mb-2">O widoku demo</h3>
+                <p className="text-xs sm:text-sm text-slate-400">Ten widok pokazuje Twoją roadmapę dokładnie tak jak widzą ją odwiedzający. Zawiera wszystkie projekty, etapy i ich status.</p>
+              </div>
+            </div>)}
+        </div>
+      </main>
+
+      {showNewProjectForm && (<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-[20px] sm:rounded-[28px] border border-slate-600/50 bg-gradient-to-b from-[#1a1f2e] to-[#141820] p-5 sm:p-8 shadow-2xl shadow-black/60">
+            <div className="mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-white">{projectFormMode === 'edit' ? 'Edytuj projekt' : 'Nowy projekt'}</h2>
+              <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">
+                {projectFormMode === 'edit' ? 'Zaktualizuj szczegóły projektu' : 'Utwórz nowy projekt w roadmapie'}
+              </p>
+            </div>
+
+            <form onSubmit={handleProjectFormSubmit} className="space-y-4 sm:space-y-5">
+              <div>
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Nazwa projektu
+                </label>
+                <input type="text" value={newProjectData.name} onChange={(e) => setNewProjectData({ ...newProjectData, name: e.target.value })} placeholder="np. Aplikacja mobilna" className="w-full rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]" required/>
+              </div>
+
+              <div>
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Opis
+                </label>
+                <textarea value={newProjectData.description} onChange={(e) => setNewProjectData({ ...newProjectData, description: e.target.value })} placeholder="Opisz cel i zakres tego projektu..." className="w-full resize-none rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]" rows={2}/>
+              </div>
+
+              <div>
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Ikona / emoji
+                </label>
+                <div className="grid grid-cols-5 gap-1.5 sm:gap-2 sm:grid-cols-5">
+                  {Object.keys(icons_1.PROJECT_ICON_COMPONENTS).map((iconKey) => (<button key={iconKey} type="button" onClick={() => setNewProjectData({ ...newProjectData, icon: iconKey })} className={`flex h-9 sm:h-10 items-center justify-center rounded-lg border text-sm sm:text-base transition ${newProjectData.icon === iconKey
+                    ? 'border-violet-400 bg-violet-500/20 text-violet-300'
+                    : 'border-slate-700/30 bg-white/[0.03] text-slate-400 hover:border-slate-700/50 hover:bg-white/[0.05] hover:text-slate-300'}`} title={iconKey}>
+                      {(0, icons_1.renderProjectIcon)(iconKey)}
+                    </button>))}
+                </div>
+              </div>
+
+              <div className="flex gap-2 sm:gap-3 pt-1 sm:pt-2">
+                <button type="submit" className="flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400">
+                  {projectFormMode === 'edit' ? 'Zapisz' : 'Utwórz'}
+                </button>
+                <button type="button" onClick={closeProjectForm} className="flex-1 rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]">
+                  Anuluj
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>)}
+
+      {showNewStageForm && selectedProject && (<div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-3 sm:p-4 backdrop-blur-md">
+          <div className="w-full max-w-sm rounded-[20px] sm:rounded-[28px] border border-slate-600/50 bg-gradient-to-b from-[#1a1f2e] to-[#141820] p-5 sm:p-8 shadow-2xl shadow-black/60">
+            <div className="mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-2xl font-bold tracking-tight text-white">{stageFormMode === 'edit' ? 'Edytuj etap' : 'Nowy etap'}</h2>
+              <p className="mt-0.5 sm:mt-1 text-xs sm:text-sm text-slate-400">Projekt: <span className="font-medium text-violet-300 truncate">{selectedProject.name}</span></p>
+            </div>
+
+            <form onSubmit={handleStageFormSubmit} className="space-y-4 sm:space-y-5">
+              <div>
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Nazwa etapu
+                </label>
+                <input type="text" value={newStageData.name} onChange={(e) => setNewStageData({ ...newStageData, name: e.target.value })} placeholder="np. Implementacja" className="w-full rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]" required/>
+              </div>
+
+              <div>
+                <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
+                  <span className="text-violet-300">●</span> Opis
+                </label>
+                <textarea value={newStageData.description} onChange={(e) => setNewStageData({ ...newStageData, description: e.target.value })} placeholder="Opisz co zostanie wykonane w tym etapie..." className="w-full resize-none rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none placeholder:text-slate-500 transition focus:border-violet-400/60 focus:bg-white/[0.05]" rows={2}/>
+              </div>
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
+                    <span className="text-violet-300">●</span> Status
+                  </label>
+                  <select value={newStageData.status} onChange={(e) => setNewStageData({ ...newStageData, status: e.target.value })} className="w-full rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm text-white outline-none transition focus:border-violet-400/60 focus:bg-white/[0.05]">
+                    <option value="pending">Oczekujące</option>
+                    <option value="in-progress">W trakcie</option>
+                    <option value="completed">Zakończone</option>
+                    <option value="blocked">Zablokowane</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="mb-1.5 sm:mb-2.5 flex items-center gap-2 text-xs sm:text-sm font-semibold text-white">
+                    <span className="text-violet-300">●</span> Ikona / skrót
+                  </label>
+                  <div className="flex flex-wrap gap-1.5 sm:gap-2">
+                    {['check', 'dot', '1', '2', '3', '4', '5'].map((option) => (<button key={option} type="button" onClick={() => setNewStageData({ ...newStageData, icon: option })} className={`flex h-8 sm:h-9 w-8 sm:w-9 items-center justify-center rounded-lg border text-xs sm:text-sm font-medium transition ${newStageData.icon === option
+                    ? 'border-violet-400 bg-violet-500/20 text-violet-300'
+                    : 'border-slate-700/30 bg-white/[0.03] text-slate-400 hover:border-slate-700/50 hover:bg-white/[0.05] hover:text-slate-300'}`} title={option}>
+                        {(0, icons_1.renderStageIcon)(option)}
+                      </button>))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2 sm:gap-3 pt-1 sm:pt-2">
+                <button type="submit" className="flex-1 rounded-lg sm:rounded-xl bg-gradient-to-r from-indigo-500 to-violet-500 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-semibold text-white shadow-lg shadow-violet-500/20 transition hover:from-indigo-400 hover:to-violet-400">
+                  {stageFormMode === 'edit' ? 'Zapisz' : 'Utwórz'}
+                </button>
+                <button type="button" onClick={closeStageForm} className="flex-1 rounded-lg sm:rounded-xl border border-slate-700/30 bg-white/[0.03] px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base font-medium text-slate-300 transition hover:border-slate-700/50 hover:bg-white/[0.05]">
+                  Anuluj
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>)}
+    </div>);
+}

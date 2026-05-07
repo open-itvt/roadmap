@@ -1,0 +1,253 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.SetupPage = SetupPage;
+const react_1 = require("react");
+const fa_1 = require("react-icons/fa");
+const react_router_dom_1 = require("react-router-dom");
+const auth_1 = require("@/api/auth");
+const crypto_1 = require("@/utils/crypto");
+const SETUP_STORAGE_KEY = 'roadmapSetupState';
+const defaultSetupState = {
+    step: 'login',
+    username: '',
+    sessionId: '',
+    qrCode: '',
+};
+function loadSetupState() {
+    if (typeof window === 'undefined') {
+        return defaultSetupState;
+    }
+    try {
+        const item = localStorage.getItem(SETUP_STORAGE_KEY);
+        if (!item) {
+            return defaultSetupState;
+        }
+        const data = JSON.parse(item);
+        return {
+            step: data.step ?? 'login',
+            username: data.username ?? '',
+            sessionId: data.sessionId ?? '',
+            qrCode: data.qrCode ?? '',
+        };
+    }
+    catch {
+        return defaultSetupState;
+    }
+}
+function saveSetupState(state) {
+    localStorage.setItem(SETUP_STORAGE_KEY, JSON.stringify(state));
+}
+function clearSetupState() {
+    localStorage.removeItem(SETUP_STORAGE_KEY);
+}
+function SetupPage() {
+    const navigate = (0, react_router_dom_1.useNavigate)();
+    const location = (0, react_router_dom_1.useLocation)();
+    const [username, setUsername] = (0, react_1.useState)('');
+    const [sessionId, setSessionId] = (0, react_1.useState)('');
+    const [qrCode, setQrCode] = (0, react_1.useState)('');
+    const [totpCode, setTotpCode] = (0, react_1.useState)('');
+    const [password, setPassword] = (0, react_1.useState)('');
+    const [showPassword, setShowPassword] = (0, react_1.useState)(false);
+    const [loading, setLoading] = (0, react_1.useState)(false);
+    const [error, setError] = (0, react_1.useState)('');
+    const [passwordStrength, setPasswordStrength] = (0, react_1.useState)({ isStrong: false, feedback: [] });
+    const [storedSetupState, setStoredSetupState] = (0, react_1.useState)(defaultSetupState);
+    const routeStep = (0, react_1.useMemo)(() => {
+        if (location.pathname.endsWith('/2fa')) {
+            return 'totp';
+        }
+        if (location.pathname.endsWith('/pass')) {
+            return 'password';
+        }
+        return 'init';
+    }, [location.pathname]);
+    (0, react_1.useEffect)(() => {
+        const storedState = loadSetupState();
+        setStoredSetupState(storedState);
+        setUsername(storedState.username);
+        setSessionId(storedState.sessionId);
+        setQrCode(storedState.qrCode);
+        const currentPath = location.pathname.replace(/\/+$/, '');
+        const isRootPath = currentPath === '/auth/setup';
+        if (isRootPath) {
+            const target = storedState.step === '2fa'
+                ? '/auth/setup/2fa'
+                : storedState.step === 'pass'
+                    ? '/auth/setup/pass'
+                    : '/auth/setup/username';
+            navigate(target, { replace: true });
+            return;
+        }
+        if (routeStep !== 'init' && !storedState.sessionId) {
+            navigate('/auth/setup/username', { replace: true });
+            return;
+        }
+        if (currentPath === '/auth/setup/username' && storedState.step !== 'login' && storedState.sessionId) {
+            const nextPath = storedState.step === '2fa'
+                ? '/auth/setup/2fa'
+                : '/auth/setup/pass';
+            navigate(nextPath, { replace: true });
+        }
+    }, [location.pathname, navigate, routeStep]);
+    const updateSetupState = (updates) => {
+        const nextState = {
+            ...storedSetupState,
+            ...updates,
+        };
+        setStoredSetupState(nextState);
+        saveSetupState(nextState);
+    };
+    const handleInitAuth = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        try {
+            const response = await auth_1.authApi.initAuth(username);
+            setSessionId(response.sessionId);
+            setQrCode(response.qrCode);
+            updateSetupState({
+                step: '2fa',
+                username,
+                sessionId: response.sessionId,
+                qrCode: response.qrCode,
+            });
+            navigate('/auth/setup/2fa', { replace: true });
+        }
+        catch (err) {
+            const rawError = err?.response?.data?.error || 'Failed to initialize authentication';
+            setError(typeof rawError === 'string' ? rawError : String(rawError));
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+    const handleVerifyTotp = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
+        const currentSessionId = sessionId || storedSetupState.sessionId;
+        try {
+            await auth_1.authApi.verifyTotp(currentSessionId, totpCode);
+            updateSetupState({ step: 'pass' });
+            navigate('/auth/setup/pass', { replace: true });
+        }
+        catch (err) {
+            const rawError = err?.response?.data?.error || 'Invalid TOTP code';
+            setError(typeof rawError === 'string' ? rawError : String(rawError));
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+    const handleSetPassword = async (e) => {
+        e.preventDefault();
+        const currentSessionId = sessionId || storedSetupState.sessionId;
+        if (!passwordStrength.isStrong) {
+            setError('Password does not meet security requirements');
+            return;
+        }
+        setLoading(true);
+        setError('');
+        try {
+            await auth_1.authApi.setPassword(currentSessionId, password);
+            clearSetupState();
+            navigate('/auth/login', { replace: true });
+        }
+        catch (err) {
+            const rawError = err?.response?.data?.error || 'Failed to set password';
+            setError(typeof rawError === 'string' ? rawError : String(rawError));
+        }
+        finally {
+            setLoading(false);
+        }
+    };
+    const step = routeStep;
+    const handleGeneratePassword = () => {
+        const newPassword = (0, crypto_1.generateRandomPassword)(16);
+        setPassword(newPassword);
+        setPasswordStrength((0, crypto_1.validatePasswordStrength)(newPassword));
+    };
+    const handlePasswordChange = (e) => {
+        const newPassword = e.target.value;
+        setPassword(newPassword);
+        setPasswordStrength((0, crypto_1.validatePasswordStrength)(newPassword));
+    };
+    return (<div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-bold mb-2">Setup Admin Account</h1>
+          <p className="text-slate-400">Configure your authentication</p>
+        </div>
+
+        {error && (<div className="mb-6 p-4 bg-red-900/20 border border-red-700 rounded text-red-200 text-sm">
+            {error}
+          </div>)}
+
+        {/* Step 1: Initialize Auth */}
+        {step === 'init' && (<form onSubmit={handleInitAuth} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Admin Username</label>
+              <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} placeholder="admin" className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" required/>
+            </div>
+            <button type="submit" disabled={loading} className="w-full px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 disabled:opacity-50 transition">
+              {loading ? 'Processing...' : 'Next'}
+            </button>
+          </form>)}
+
+        {/* Step 2: Verify TOTP */}
+        {step === 'totp' && (<form onSubmit={handleVerifyTotp} className="space-y-6">
+            <div className="bg-slate-900 p-6 rounded border border-slate-800 flex justify-center">
+              <div className="bg-white p-4 rounded">
+                <img src={qrCode} alt="TOTP QR code" className="h-[200px] w-[200px]"/>
+              </div>
+            </div>
+
+            <div>
+              <p className="text-sm text-slate-400 mb-4">
+                Scan this QR code with your authenticator app (Google Authenticator, Authy, Microsoft Authenticator, etc.)
+              </p>
+              <label className="block text-sm font-medium mb-2">Enter the 6-digit code</label>
+              <input type="text" value={totpCode} onChange={(e) => setTotpCode(e.target.value.replace(/\D/g, '').slice(0, 6))} placeholder="000000" maxLength={6} className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded text-white placeholder-slate-500 focus:outline-none focus:border-blue-500 text-center text-2xl tracking-widest font-mono" required/>
+            </div>
+
+            <button type="submit" disabled={loading || totpCode.length !== 6} className="w-full px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 disabled:opacity-50 transition">
+              {loading ? 'Verifying...' : 'Verify Code'}
+            </button>
+          </form>)}
+
+        {/* Step 3: Set Password */}
+        {step === 'password' && (<form onSubmit={handleSetPassword} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium mb-2">Admin Password</label>
+              <div className="relative">
+                <input type={showPassword ? 'text' : 'password'} value={password} onChange={handlePasswordChange} placeholder="Create a strong password" className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded text-white placeholder-slate-500 focus:outline-none focus:border-blue-500" required/>
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-300">
+                  {showPassword ? <fa_1.FaEye /> : <fa_1.FaEyeSlash />}
+                </button>
+              </div>
+              <button type="button" onClick={handleGeneratePassword} className="mt-2 text-sm text-blue-400 hover:text-blue-300 underline">
+                Generate random password
+              </button>
+            </div>
+
+            {/* Password strength feedback */}
+            {password && (<div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <div className={`h-2 flex-1 rounded ${passwordStrength.isStrong ? 'bg-green-600' : 'bg-orange-600'}`}></div>
+                  <span className="text-xs font-medium">
+                    {passwordStrength.isStrong ? (<><fa_1.FaCheckCircle className="inline-block mr-1"/> Strong</>) : (<><fa_1.FaExclamationTriangle className="inline-block mr-1"/> Weak</>)}
+                  </span>
+                </div>
+                {passwordStrength.feedback.length > 0 && (<ul className="text-xs text-slate-400 space-y-1">
+                    {passwordStrength.feedback.map((item, i) => (<li key={i}>• {item}</li>))}
+                  </ul>)}
+              </div>)}
+
+            <button type="submit" disabled={loading || !passwordStrength.isStrong} className="w-full px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 disabled:opacity-50 transition">
+              {loading ? 'Setting up...' : 'Complete Setup'}
+            </button>
+          </form>)}
+      </div>
+    </div>);
+}
