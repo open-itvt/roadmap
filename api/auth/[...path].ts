@@ -42,44 +42,45 @@ function methodNotAllowed(res: any, method: string) {
 export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return
 
-  // Helpful logging for debugging 405s on deployed platforms
   try {
-    console.log('auth request', { method: req.method, url: req.url, query: req.query })
-  } catch (e) {
-    // ignore
-  }
+    // Helpful logging for debugging 405s on deployed platforms
+    try {
+      console.log('auth request', { method: req.method, url: req.url, query: req.query })
+    } catch (e) {
+      // ignore
+    }
 
-  const pathSegments: string[] = Array.isArray(req.query.path)
-    ? req.query.path
-    : req.query.path
-    ? [req.query.path]
-    : []
-  const route = pathSegments.join('/')
+    const pathSegments: string[] = Array.isArray(req.query.path)
+      ? req.query.path
+      : req.query.path
+      ? [req.query.path]
+      : []
+    const route = pathSegments.join('/')
 
-  switch (route) {
-    case 'init':
-      return handleInit(req, res)
-    case 'login':
-      return handleLogin(req, res)
-    case 'logout':
-      return handleLogout(req, res)
-    case 'me':
-      return handleMe(req, res)
-    case 'verify-totp':
-      return handleVerifyTotp(req, res)
-    case 'set-password':
-      return handleSetPassword(req, res)
-    case 'webauthn/register/start':
-      return handleWebAuthnRegisterStart(req, res)
-    case 'webauthn/register/complete':
-      return handleWebAuthnRegisterComplete(req, res)
-    case 'webauthn/auth/start':
-      return handleWebAuthnAuthStart(req, res)
-    case 'webauthn/auth/complete':
-      return handleWebAuthnAuthComplete(req, res)
-    default:
-      res.status(404).json({ error: 'Not found' })
-  }
+    switch (route) {
+      case 'init':
+        return handleInit(req, res)
+      case 'login':
+        return handleLogin(req, res)
+      case 'logout':
+        return handleLogout(req, res)
+      case 'me':
+        return handleMe(req, res)
+      case 'verify-totp':
+        return handleVerifyTotp(req, res)
+      case 'set-password':
+        return handleSetPassword(req, res)
+      case 'webauthn/register/start':
+        return handleWebAuthnRegisterStart(req, res)
+      case 'webauthn/register/complete':
+        return handleWebAuthnRegisterComplete(req, res)
+      case 'webauthn/auth/start':
+        return handleWebAuthnAuthStart(req, res)
+      case 'webauthn/auth/complete':
+        return handleWebAuthnAuthComplete(req, res)
+      default:
+        res.status(404).json({ error: 'Not found' })
+    }
   } catch (err) {
     try {
       console.error('auth handler uncaught error', err)
@@ -98,6 +99,7 @@ export default async function handler(req: any, res: any) {
         // give up
       }
     }
+  }
 }
 
 async function handleInit(req: any, res: any) {
