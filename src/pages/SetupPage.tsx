@@ -135,7 +135,8 @@ export function SetupPage() {
       })
       navigate('/auth/setup/2fa', { replace: true })
     } catch (err: unknown) {
-      setError((err as any)?.response?.data?.error || 'Failed to initialize authentication')
+      const rawError = (err as any)?.response?.data?.error || 'Failed to initialize authentication'
+      setError(typeof rawError === 'string' ? rawError : String(rawError))
     } finally {
       setLoading(false)
     }
@@ -152,7 +153,8 @@ export function SetupPage() {
       updateSetupState({ step: 'pass' })
       navigate('/auth/setup/pass', { replace: true })
     } catch (err: unknown) {
-      setError((err as any)?.response?.data?.error || 'Invalid TOTP code')
+      const rawError = (err as any)?.response?.data?.error || 'Invalid TOTP code'
+      setError(typeof rawError === 'string' ? rawError : String(rawError))
     } finally {
       setLoading(false)
     }
@@ -175,7 +177,8 @@ export function SetupPage() {
       clearSetupState()
       navigate('/auth/login', { replace: true })
     } catch (err: unknown) {
-      setError((err as any)?.response?.data?.error || 'Failed to set password')
+      const rawError = (err as any)?.response?.data?.error || 'Failed to set password'
+      setError(typeof rawError === 'string' ? rawError : String(rawError))
     } finally {
       setLoading(false)
     }

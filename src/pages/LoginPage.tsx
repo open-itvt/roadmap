@@ -43,7 +43,8 @@ export function LoginPage() {
       await login(username, password, totpCode)
       navigate('/roadmap-manage', { replace: true })
     } catch (err: unknown) {
-      setError((err as any)?.response?.data?.error || 'Login failed. Please try again.')
+      const rawError = (err as any)?.response?.data?.error || 'Login failed. Please try again.'
+      setError(typeof rawError === 'string' ? rawError : String(rawError))
     } finally {
       setLoading(false)
     }
