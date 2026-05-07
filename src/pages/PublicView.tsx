@@ -209,6 +209,13 @@ function getBuildDate(): string {
   return today.toISOString().split('T')[0]
 }
 
+function formatRefreshLabel(timestamp: number): string {
+  const date = new Date(timestamp)
+  const formattedDate = date.toLocaleDateString('pl-PL')
+  const formattedTime = date.toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' })
+  return `Zaktualizowano dane o ${formattedDate} - ${formattedTime}`
+}
+
 export function PublicView() {
   const navigate = useNavigate()
   const { isAuthenticated, logout } = useAuth()
@@ -453,7 +460,7 @@ export function PublicView() {
           {/* Content */}
           {selectedProject ? (
             activeTab === 'roadmap' ? (
-              <RoadmapContent stages={stagesByProjectId[selectedProject.id] ?? []} />
+              <RoadmapContent stages={stagesByProjectId[selectedProject.id] ?? []} lastRefreshAt={lastRefreshAt} />
             ) : (
               <DetailsContent project={selectedProject} />
             )
@@ -468,7 +475,7 @@ export function PublicView() {
   )
 }
 
-function RoadmapContent({ stages }: { stages: Stage[] }) {
+function RoadmapContent({ stages, lastRefreshAt }: { stages: Stage[]; lastRefreshAt: number }) {
   if (stages.length === 0) {
     return (
       <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-800/80 bg-white/[0.03]">
@@ -544,7 +551,7 @@ function RoadmapContent({ stages }: { stages: Stage[] }) {
                       }`}>
                         {stage.status === 'completed' && 'Zakończone'}
                         {stage.status === 'in-progress' && 'W trakcie'}
-                        {stage.status === 'blocked' && 'W trakcie'}
+                        {stage.status === 'blocked' && 'Zablokowane'}
                         {stage.status === 'pending' && 'Oczekujące'}
                       </span>
                       {stage.status === 'in-progress' && stage.progress && (
@@ -563,6 +570,10 @@ function RoadmapContent({ stages }: { stages: Stage[] }) {
       <div className="flex items-center justify-center gap-2 text-slate-500 text-sm mt-12 pt-6 border-t border-white/6">
         <FaGlobe />
         <span>Każdy może przeglądać postępy</span>
+      </div>
+
+      <div className="mt-2 text-center text-xs text-slate-500">
+        {lastRefreshAt ? formatRefreshLabel(lastRefreshAt) : 'Zaktualizowano dane przed chwilą'}
       </div>
     </div>
   )

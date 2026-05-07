@@ -205,7 +205,6 @@ interface ManagementTabContentProps {
   resetProjectForm: (project?: Project) => void
   resetStageForm: (stage?: Stage) => void
   handleDuplicateProject: (project: Project) => Promise<void>
-  handleDeleteProject: (id: string) => Promise<void>
   handleDeleteStage: (id: string) => Promise<void>
   selectedProjectStages: Stage[]
   editingStage: Stage | null
@@ -225,7 +224,6 @@ function ManagementTabContent({
   resetProjectForm,
   resetStageForm,
   handleDuplicateProject,
-  handleDeleteProject,
   handleDeleteStage,
   selectedProjectStages,
   editingStage,
@@ -324,17 +322,6 @@ function ManagementTabContent({
                       title="Powiel projekt"
                     >
                       <FaClone className="mx-auto" />
-                    </button>
-                    <button
-                      type="button"
-                      className="flex-1 rounded-lg border border-red-500/20 p-1.5 text-red-300 transition hover:bg-red-500/10"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        void handleDeleteProject(project.id)
-                      }}
-                      title="Usuń projekt"
-                    >
-                      <FaTrashAlt className="mx-auto" />
                     </button>
                   </div>
                 </div>
@@ -1341,7 +1328,6 @@ export function AdminPanelScreen() {
               resetProjectForm={resetProjectForm}
               resetStageForm={resetStageForm}
               handleDuplicateProject={handleDuplicateProject}
-              handleDeleteProject={handleDeleteProject}
               handleDeleteStage={handleDeleteStage}
               selectedProjectStages={selectedProjectStages}
               editingStage={editingStage}
@@ -1668,6 +1654,10 @@ export function AdminPanelScreen() {
                   <button onClick={() => handleDuplicateProject(selectedProject)} className="inline-flex items-center gap-2 rounded-xl bg-slate-700/30 px-4 py-2 text-sm font-medium text-slate-300 transition hover:bg-slate-700/50">
                     <FaClone className="text-sm" />
                     <span>Duplikuj</span>
+                  </button>
+                  <button onClick={() => handleDeleteProject(selectedProject.id)} className="inline-flex items-center gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/20 hover:border-red-500/30">
+                    <FaTrashAlt className="text-sm" />
+                    <span>Usuń projekt</span>
                   </button>
                 </div>
               </div>
