@@ -79,6 +79,24 @@ export default async function handler(req: any, res: any) {
     default:
       res.status(404).json({ error: 'Not found' })
   }
+  } catch (err) {
+    try {
+      console.error('auth handler uncaught error', err)
+    } catch (e) {
+      // ignore
+    }
+    // Return a JSON error; Vercel may still emit FUNCTION_INVOCATION_FAILED for crashes,
+    // but this helps surface errors in logs and returns an intelligible response.
+    try {
+      res.status(500).json({ error: 'Internal server error', detail: String((err as any)?.message || err) })
+    } catch (e) {
+      // If writing JSON fails, attempt plain text
+      try {
+        res.status(500).send(String((err as any)?.message || 'Internal server error'))
+      } catch (e2) {
+        // give up
+      }
+    }
 }
 
 async function handleInit(req: any, res: any) {
