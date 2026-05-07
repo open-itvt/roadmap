@@ -23,6 +23,7 @@ import {
 } from './_shared.js'
 
 function isLocalAuthEnabled(): boolean {
+  // Only enable LOCAL_AUTH in development mode, never in production
   return process.env.NODE_ENV === 'development' && String(process.env.LOCAL_AUTH || '').toLowerCase() === 'yes'
 }
 
@@ -40,8 +41,39 @@ function methodNotAllowed(res: any, method: string) {
 }
 
 function getRouteSegments(req: any): string[] {
-  const rawPath = req.query.path ?? req.query['...path']
-  return Array.isArray(rawPath) ? rawPath : rawPath ? [rawPath] : []
+  const query = req?.query || {}
+  const rawPath =
+    query.path ??
+    query['...path'] ??
+    query['[...path]'] ??
+    query.pathSegments
+
+  if (Array.isArray(rawPath)) {
+    return rawPath
+      .map((part) => String(part).trim())
+      .filter(Boolean)
+  }
+
+  if (typeof rawPath === 'string' && rawPath.trim()) {
+    return rawPath
+      .split('/')
+      .map((part) => part.trim())
+      .filter(Boolean)
+  }
+
+  const fallbackUrl = String(req?.url || '')
+  const pathname = fallbackUrl.split('?')[0] || ''
+  const base = '/api/auth/'
+
+  if (pathname.startsWith(base)) {
+    return pathname
+      .slice(base.length)
+      .split('/')
+      .map((part) => decodeURIComponent(part).trim())
+      .filter(Boolean)
+  }
+
+  return []
 }
 
 export default async function handler(req: any, res: any) {
@@ -57,6 +89,8 @@ export default async function handler(req: any, res: any) {
 
     const pathSegments: string[] = getRouteSegments(req)
     const route = pathSegments.join('/')
+
+    console.log('auth route', { route, method: req.method })
 
     switch (route) {
       case 'init':
@@ -79,6 +113,12 @@ export default async function handler(req: any, res: any) {
         return handleWebAuthnAuthStart(req, res)
       case 'webauthn/auth/complete':
         return handleWebAuthnAuthComplete(req, res)
+      case 'debug/admins':
+        return handleDebugAdmins(req, res)
+      case 'debug/create-admin':
+        return handleDebugCreateAdmin(req, res)
+      case 'debug/delete-admin':
+        return handleDebugDeleteAdmin(req, res)
       default:
         res.status(404).json({ error: 'Not found' })
     }
@@ -149,7 +189,9 @@ async function handleInit(req: any, res: any) {
 }
 
 async function handleLogin(req: any, res: any) {
+  console.log('handleLogin called', { method: req.method, url: req.url })
   if (req.method !== 'POST') {
+    console.log('method not POST, returning 405')
     return methodNotAllowed(res, req.method)
   }
 
@@ -190,11 +232,13 @@ async function handleLogin(req: any, res: any) {
 
     const admin = await getAdminByUsername(username)
     if (!admin) {
+      console.log('login: admin not found', { username })
       res.status(401).json({ error: 'Invalid credentials' })
       return
     }
 
     const passwordMatches = await bcrypt.compare(password, admin.passwordHash)
+    console.log('login: password compare result', { username, passwordMatches })
     if (!passwordMatches) {
       res.status(401).json({ error: 'Invalid credentials' })
       return
@@ -208,7 +252,7 @@ async function handleLogin(req: any, res: any) {
       window: 2,
       step: 30,
     })
-
+    console.log('login: totp verify result', { username, totpMatches })
     if (!totpMatches) {
       res.status(401).json({ error: 'Invalid TOTP code' })
       return
@@ -285,6 +329,8 @@ async function handleMe(req: any, res: any) {
       return
     }
 
+    const hasPasskey = Array.isArray(admin.webauthnCredentials) && admin.webauthnCredentials.length > 0
+
     res.status(200).json({
       success: true,
       data: {
@@ -292,6 +338,7 @@ async function handleMe(req: any, res: any) {
         adminId: admin.username,
         isSetupComplete: Boolean(admin.isSetupComplete),
         adminExists,
+        hasPasskey
       },
     })
   } catch (error) {
@@ -418,8 +465,8 @@ async function handleWebAuthnRegisterStart(req: any, res: any) {
     const sessionId = uuidv4()
     const options = await generateRegistrationOptions({
       rpName: 'Roadmap Admin',
-      rpID: getWebAuthnRpID(),
-      userID: username,
+      rpID: getWebAuthnRpID(req),
+      userID: Buffer.from(username, 'utf8'),
       userName: username,
       timeout: 60000,
       attestationType: 'none',
@@ -474,8 +521,8 @@ async function handleWebAuthnRegisterComplete(req: any, res: any) {
     const verification = await verifyRegistrationResponse({
       response,
       expectedChallenge: pending.options.challenge,
-      expectedOrigin: getWebAuthnOrigin(),
-      expectedRPID: getWebAuthnRpID(),
+      expectedOrigin: getWebAuthnOrigin(req),
+      expectedRPID: getWebAuthnRpID(req),
       requireUserVerification: true,
     })
 
@@ -533,7 +580,7 @@ async function handleWebAuthnAuthStart(req: any, res: any) {
 
     const sessionId = uuidv4()
     const options = await generateAuthenticationOptions({
-      rpID: getWebAuthnRpID(),
+      rpID: getWebAuthnRpID(req),
       timeout: 60000,
       userVerification: 'preferred',
       allowCredentials,
@@ -602,8 +649,8 @@ async function handleWebAuthnAuthComplete(req: any, res: any) {
     const verification = await verifyAuthenticationResponse({
       response,
       expectedChallenge: pending.options.challenge,
-      expectedOrigin: getWebAuthnOrigin(),
-      expectedRPID: getWebAuthnRpID(),
+      expectedOrigin: getWebAuthnOrigin(req),
+      expectedRPID: getWebAuthnRpID(req),
       authenticator: {
         credentialID: Buffer.from(credential.credentialId, 'base64'),
         credentialPublicKey: Buffer.from(credential.publicKey, 'base64'),
@@ -627,6 +674,130 @@ async function handleWebAuthnAuthComplete(req: any, res: any) {
     res.status(200).json({ success: true, data: { sessionToken, adminId: admin.username } })
   } catch (error) {
     console.error('webauthn/auth/complete error', error)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+async function handleDebugAdmins(req: any, res: any) {
+  if (req.method !== 'GET') {
+    return methodNotAllowed(res, req.method)
+  }
+
+  try {
+    const tokenHeader = String(req.headers['x-debug-token'] || '')
+    const expected = String(process.env.DEBUG_ADMIN_LIST_TOKEN || '')
+
+    // Require a secret token in production; allow if LOCAL_AUTH enabled for dev convenience
+    if (!expected) {
+      console.log('debug/admins: DEBUG_ADMIN_LIST_TOKEN not set; denying request')
+      res.status(403).json({ error: 'Debug endpoint not enabled; set DEBUG_ADMIN_LIST_TOKEN' })
+      return
+    }
+
+    if (!tokenHeader || tokenHeader !== expected) {
+      console.log('debug/admins: invalid token', { provided: tokenHeader ? 'present' : 'missing' })
+      res.status(403).json({ error: 'Forbidden' })
+      return
+    }
+
+    const admins = await getAllAdmins()
+    const safe = admins.map((a: any) => ({ username: a.username, isSetupComplete: Boolean(a.isSetupComplete), createdAt: a.createdAt || null, updatedAt: a.updatedAt || null }))
+    res.status(200).json({ success: true, data: safe })
+  } catch (err) {
+    console.error('debug/admins error', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+async function handleDebugCreateAdmin(req: any, res: any) {
+  if (req.method !== 'POST') {
+    return methodNotAllowed(res, req.method)
+  }
+
+  try {
+    const tokenHeader = String(req.headers['x-debug-token'] || '')
+    const expected = String(process.env.DEBUG_ADMIN_LIST_TOKEN || '')
+
+    if (!expected) {
+      res.status(403).json({ error: 'Debug endpoint not enabled; set DEBUG_ADMIN_LIST_TOKEN' })
+      return
+    }
+
+    if (!tokenHeader || tokenHeader !== expected) {
+      res.status(403).json({ error: 'Forbidden' })
+      return
+    }
+
+    const { username, password } = req.body || {}
+    if (!username || !password) {
+      res.status(400).json({ error: 'username and password are required' })
+      return
+    }
+
+    const existing = await getAdminByUsername(username)
+    if (existing) {
+      res.status(409).json({ error: 'Admin already exists' })
+      return
+    }
+
+    const secretObj = speakeasy.generateSecret({ name: `Roadmap (${username})` })
+    const totpSecret = secretObj.base32
+
+    const salt = await bcrypt.genSalt(10)
+    const hashed = await bcrypt.hash(password, salt)
+
+    const adminRecord = {
+      username,
+      passwordHash: hashed,
+      totpSecret,
+      createdAt: Date.now(),
+      isSetupComplete: true,
+    }
+
+    await saveAdmin(adminRecord)
+
+    res.status(200).json({ success: true, data: { username, totpSecret } })
+  } catch (err) {
+    console.error('debug/create-admin error', err)
+    res.status(500).json({ error: 'Internal server error' })
+  }
+}
+
+async function handleDebugDeleteAdmin(req: any, res: any) {
+  if (req.method !== 'POST') {
+    return methodNotAllowed(res, req.method)
+  }
+
+  try {
+    const tokenHeader = String(req.headers['x-debug-token'] || '')
+    const expected = String(process.env.DEBUG_ADMIN_LIST_TOKEN || '')
+
+    if (!expected) {
+      res.status(403).json({ error: 'Debug endpoint not enabled; set DEBUG_ADMIN_LIST_TOKEN' })
+      return
+    }
+
+    if (!tokenHeader || tokenHeader !== expected) {
+      res.status(403).json({ error: 'Forbidden' })
+      return
+    }
+
+    const { username } = req.body || {}
+    if (!username) {
+      res.status(400).json({ error: 'username is required' })
+      return
+    }
+
+    const existing = await getAdminByUsername(username)
+    if (!existing) {
+      res.status(404).json({ error: 'Admin not found' })
+      return
+    }
+
+    await redis.del(`admin:${username}`)
+    res.status(200).json({ success: true, data: { username } })
+  } catch (err) {
+    console.error('debug/delete-admin error', err)
     res.status(500).json({ error: 'Internal server error' })
   }
 }

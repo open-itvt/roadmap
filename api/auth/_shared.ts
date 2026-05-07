@@ -29,6 +29,27 @@ export interface SessionRecord {
 
 const SESSION_TTL_SECONDS = 60 * 60 * 24 * 7
 
+function getRequestHeader(req: any, name: string): string {
+  const headers = req?.headers || {}
+  const value = headers[name] ?? headers[String(name).toLowerCase()]
+  return typeof value === 'string' ? value : Array.isArray(value) ? value[0] || '' : ''
+}
+
+function getOriginFromRequest(req: any): string {
+  const explicitOrigin = getRequestHeader(req, 'origin').trim()
+  if (explicitOrigin) {
+    return explicitOrigin
+  }
+
+  const proto = getRequestHeader(req, 'x-forwarded-proto').trim() || 'https'
+  const host = getRequestHeader(req, 'x-forwarded-host').trim() || getRequestHeader(req, 'host').trim()
+  if (host) {
+    return `${proto}://${host}`
+  }
+
+  return 'http://localhost:5173'
+}
+
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET
   if (!secret) {
@@ -38,12 +59,22 @@ export function getJwtSecret(): string {
   return secret
 }
 
-export function getWebAuthnOrigin(): string {
-  return process.env.WEBAUTHN_ORIGIN || 'http://localhost:5173'
+export function getWebAuthnOrigin(req?: any): string {
+  return process.env.WEBAUTHN_ORIGIN || getOriginFromRequest(req)
 }
 
-export function getWebAuthnRpID(): string {
-  return process.env.WEBAUTHN_RP_ID || 'localhost'
+export function getWebAuthnRpID(req?: any): string {
+  const explicitRpID = process.env.WEBAUTHN_RP_ID
+  if (explicitRpID) {
+    return explicitRpID
+  }
+
+  const origin = getWebAuthnOrigin(req)
+  try {
+    return new URL(origin).hostname
+  } catch {
+    return 'localhost'
+  }
 }
 
 function isLocalAuthSession(sessionId?: string): boolean {
