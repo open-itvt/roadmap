@@ -21,6 +21,10 @@ import {
   getSessionFromToken,
 } from './_shared'
 
+function isLocalAuthEnabled(): boolean {
+  return String(process.env.LOCAL_AUTH || '').toLowerCase() === 'yes'
+}
+
 export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return
 
@@ -113,6 +117,46 @@ async function handleLogin(req: any, res: any) {
     const { username, password, totpCode } = req.body || {}
     if (!username || !password || !totpCode) {
       res.status(400).json({ error: 'username, password and totpCode are required' })
+      return
+    }
+
+    if (isLocalAuthEnabled()) {
+      const localAdmin = process.env.LOCAL_admin
+      const localPass = process.env.LOCAL_PASS
+      const localOtp = process.env.LOCAL_OTP
+
+      if (!localAdmin || !localPass || !localOtp) {
+        res.status(500).json({ error: 'LOCAL_AUTH is enabled but LOCAL_admin, LOCAL_PASS or LOCAL_OTP is missing' })
+        return
+      }
+
+      if (String(username) !== localAdmin || String(password) !== localPass || String(totpCode) !== localOtp) {
+        res.status(401).json({ error: 'Invalid credentials' })
+        return
+      }
+
+      // Ensure /auth/me resolves this user as a valid admin after login.
+      const existingAdmin = await getAdminByUsername(localAdmin)
+      if (!existingAdmin) {
+        await saveAdmin({
+          username: localAdmin,
+          passwordHash: 'local-auth',
+          totpSecret: 'local-auth',
+          createdAt: Date.now(),
+          isSetupComplete: true,
+        })
+      }
+
+      const admin = (await getAdminByUsername(localAdmin)) || {
+        username: localAdmin,
+        passwordHash: 'local-auth',
+        totpSecret: 'local-auth',
+        createdAt: Date.now(),
+        isSetupComplete: true,
+      }
+
+      const { sessionToken } = await issueSession(admin)
+      res.status(200).json({ success: true, data: { sessionToken, adminId: localAdmin } })
       return
     }
 
