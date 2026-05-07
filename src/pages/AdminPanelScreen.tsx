@@ -551,6 +551,7 @@ export function AdminPanelScreen() {
   const [selectedStage, setSelectedStage] = useState<Stage | null>(null)
   const [selectedLinkStageId, setSelectedLinkStageId] = useState<string>('')
   const [stageLinks, setStageLinks] = useState<Link[]>([])
+  const [projectLinks, setProjectLinks] = useState<Link[]>([])
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
   const [linkFormData, setLinkFormData] = useState<{
     title: string
@@ -800,6 +801,20 @@ export function AdminPanelScreen() {
     }
   }, [])
 
+  const loadProjectLinks = useCallback(async (projectId: string) => {
+    try {
+      const projectStages = stages.filter((s) => s.projectId === projectId)
+      const all = await Promise.all(projectStages.map((s) => linksApi.getByStageId(projectId, s.id).catch(() => [] as Link[])))
+      const allLinks = all.flat()
+      const seen = new Set<string>()
+      const githubLinks = allLinks.filter((l) => l.type === 'github' && !seen.has(l.url) && (seen.add(l.url), true))
+      setProjectLinks(githubLinks)
+    } catch (error) {
+      console.error('Failed to load project links:', error)
+      setProjectLinks([])
+    }
+  }, [stages])
+
   useEffect(() => {
     if (!selectedProject) {
       setSelectedLinkStageId('')
@@ -828,6 +843,7 @@ export function AdminPanelScreen() {
     }
 
     void loadLinksForStage(selectedProject.id, nextStageId)
+    void loadProjectLinks(selectedProject.id)
   }, [selectedProject, selectedLinkStageId, stages, loadLinksForStage])
 
   const handleLinkSubmit = async (e: React.FormEvent) => {
@@ -1082,6 +1098,19 @@ export function AdminPanelScreen() {
       setEditingProject(updated)
     } catch (error) {
       console.error('Failed to lock project:', error)
+    }
+  }
+
+  const handleUnlockProject = async () => {
+    if (!selectedProject || !selectedProject.isLocked) return
+    if (!window.confirm('Czy na pewno chcesz odblokować projekt?')) return
+    try {
+      const updated = await projectsApi.update(selectedProject.id, { isLocked: false })
+      setSelectedProject(updated)
+      setProjects(projects.map((project) => (project.id === updated.id ? updated : project)))
+      setEditingProject(updated)
+    } catch (error) {
+      console.error('Failed to unlock project:', error)
     }
   }
 
@@ -1498,6 +1527,28 @@ export function AdminPanelScreen() {
                 <h3 className="text-lg font-semibold text-white mb-2">Linki etapów</h3>
                 <p className="text-sm text-slate-400 mb-6">Dodane tu linki pojawią się na publicznej roadmapie użytkownika pod "/".</p>
 
+                <div className="mb-6 rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4">
+                  <div className="mb-3 flex items-center gap-3">
+                    <FaCode className="text-slate-300" />
+                    <div>
+                      <div className="text-sm font-medium text-white">Link projektu</div>
+                      <div className="text-xs text-slate-400">Skompilowane linki GitHub z etapów projektu</div>
+                    </div>
+                  </div>
+                  {projectLinks.length > 0 ? (
+                    <div className="flex flex-wrap gap-2">
+                      {projectLinks.map((link) => (
+                        <a key={link.id} href={link.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 rounded-lg bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-200">
+                          <FaExternalLinkAlt className="text-xs" />
+                          {link.title}
+                        </a>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-sm text-slate-400">Brak linków projektu. Dodaj linki do etapów, aby występowały tutaj.</div>
+                  )}
+                </div>
+
                 {!selectedProject ? (
                   <div className="rounded-2xl border border-slate-700/30 bg-white/[0.02] p-4 text-center">
                     <p className="text-sm text-slate-400">Najpierw wybierz projekt.</p>
@@ -1684,6 +1735,12 @@ export function AdminPanelScreen() {
                     <button onClick={handleLockProject} className="inline-flex items-center gap-2 rounded-xl border border-slate-600/40 bg-slate-700/20 px-4 py-2 text-sm font-medium text-slate-200 transition hover:border-slate-500/60 hover:bg-slate-700/40">
                       <FaLock className="text-sm" />
                       <span>Zablokuj</span>
+                    </button>
+                  )}
+                  {selectedProject.isLocked && (
+                    <button onClick={handleUnlockProject} className="inline-flex items-center gap-2 rounded-xl border border-slate-600/40 bg-emerald-700/20 px-4 py-2 text-sm font-medium text-emerald-200 transition hover:border-emerald-500/60 hover:bg-emerald-700/40">
+                      <FaLock className="text-sm" />
+                      <span>Odblokuj</span>
                     </button>
                   )}
                   {!selectedProject.isLocked && (

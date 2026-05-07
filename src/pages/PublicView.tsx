@@ -108,6 +108,18 @@ const SAMPLE_STAGES: Stage[] = [
   },
 ]
 
+const LOADING_QUOTES = [
+  'Planowanie to mapowanie przyszłości — chwila cierpliwości.',
+  'Roadmapa: małe kroki prowadzące do dużych zmian.',
+  'Wersja po wersji — budujemy spójny kierunek.',
+  'Priorytety mówią nam, co robić następne.',
+  'Każdy etap to dowód postępu — zaraz będzie lepiej.',
+]
+
+function randomQuote(): string {
+  return LOADING_QUOTES[Math.floor(Math.random() * LOADING_QUOTES.length)]
+}
+
 const PUBLIC_ROADMAP_CACHE_KEY = 'roadmap-public-cache-v1'
 const PUBLIC_ROADMAP_REFRESH_INTERVAL_MS = 30_000
 
@@ -294,6 +306,7 @@ export function PublicView() {
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-400">Loading...</p>
+          <p className="mt-2 text-xs text-slate-500">{randomQuote()}</p>
         </div>
       </div>
     )
