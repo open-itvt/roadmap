@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import {
   FaBars,
+  FaCode,
   FaGlobe,
   FaFileAlt,
   FaChartBar,
@@ -18,7 +19,7 @@ import {
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '@/contexts/AuthContext'
 import { renderProjectIcon } from '@/utils/icons'
-import type { Project, Stage } from '@/types'
+import type { Link, Project, Stage } from '@/types'
 import { linksApi, projectsApi, stagesApi } from '@/api/endpoints'
 
 // Sample data for development/demo
@@ -216,6 +217,14 @@ function formatRefreshLabel(timestamp: number): string {
   return `Zaktualizowano dane o ${formattedDate} - ${formattedTime}`
 }
 
+function getProjectGitHubLinks(stages: Stage[]): Link[] {
+  const seenUrls = new Set<string>()
+
+  return stages
+    .flatMap((stage) => stage.links ?? [])
+    .filter((link) => link.type === 'github' && !seenUrls.has(link.url) && seenUrls.add(link.url))
+}
+
 export function PublicView() {
   const navigate = useNavigate()
   const { isAuthenticated, logout } = useAuth()
@@ -227,6 +236,9 @@ export function PublicView() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(!cachedSnapshot)
   const [lastRefreshAt, setLastRefreshAt] = useState<number>(cachedSnapshot?.loadedAt ?? 0)
+  const selectedProjectStages = selectedProject ? stagesByProjectId[selectedProject.id] ?? [] : []
+  const selectedProjectLinks = selectedProject ? getProjectGitHubLinks(selectedProjectStages) : []
+  const primaryProjectLink = selectedProjectLinks[0]?.url ?? '#'
 
   const applySnapshot = (snapshot: PublicRoadmapSnapshot) => {
     publicRoadmapCache = snapshot
@@ -405,7 +417,7 @@ export function PublicView() {
               <div className="min-w-0 text-right flex-1">
                 <div className="truncate text-sm font-semibold text-white">{selectedProject?.name}</div>
               </div>
-              <a href="/auth/login" className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100 flex-shrink-0" aria-label="GitHub login">
+              <a href={primaryProjectLink} className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-700/80 bg-white/[0.04] text-slate-100 flex-shrink-0" aria-label="GitHub project link">
                 <FaExternalLinkAlt className="text-sm" />
               </a>
             </div>
@@ -423,7 +435,7 @@ export function PublicView() {
                   Odświeżono {new Date(lastRefreshAt).toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
                 </div>
               ) : null}
-              <a href="/auth/login" className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/6 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
+              <a href={primaryProjectLink} className="inline-flex w-fit items-center gap-2 rounded-xl border border-white/6 bg-white/[0.04] px-4 py-2 text-sm text-slate-300 hover:bg-white/[0.06]">
                 <span>GitHub</span>
                 <FaExternalLinkAlt className="text-sm" />
               </a>
@@ -460,7 +472,7 @@ export function PublicView() {
           {/* Content */}
           {selectedProject ? (
             activeTab === 'roadmap' ? (
-              <RoadmapContent stages={stagesByProjectId[selectedProject.id] ?? []} lastRefreshAt={lastRefreshAt} />
+              <RoadmapContent stages={selectedProjectStages} projectLinks={selectedProjectLinks} lastRefreshAt={lastRefreshAt} />
             ) : (
               <DetailsContent project={selectedProject} />
             )
@@ -475,7 +487,7 @@ export function PublicView() {
   )
 }
 
-function RoadmapContent({ stages, lastRefreshAt }: { stages: Stage[]; lastRefreshAt: number }) {
+function RoadmapContent({ stages, projectLinks, lastRefreshAt }: { stages: Stage[]; projectLinks: Link[]; lastRefreshAt: number }) {
   if (stages.length === 0) {
     return (
       <div className="flex min-h-96 items-center justify-center rounded-3xl border border-slate-800/80 bg-white/[0.03]">
@@ -486,6 +498,45 @@ function RoadmapContent({ stages, lastRefreshAt }: { stages: Stage[]; lastRefres
 
   return (
     <div className="space-y-6 pb-10">
+      <section className="rounded-3xl border border-slate-800/80 bg-[#0f141b] p-5 shadow-[0_12px_28px_rgba(0,0,0,0.18)]">
+        <div className="mb-4 flex items-center gap-3">
+          <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/5 text-slate-200">
+            <FaCode />
+          </span>
+          <div>
+            <div className="text-sm font-medium text-white">Linki projektu</div>
+            <div className="text-xs text-slate-500">Główne odnośniki z panelu admina</div>
+          </div>
+        </div>
+
+        {projectLinks.length > 0 ? (
+          <div className="flex flex-wrap gap-2">
+            {projectLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-200 transition hover:bg-slate-700/60"
+                title={link.description || link.title}
+              >
+                <FaExternalLinkAlt className="text-xs" />
+                {link.title}
+              </a>
+            ))}
+          </div>
+        ) : (
+          <a
+            href="#"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-slate-800/50 px-3 py-2 text-sm font-medium text-slate-400 transition hover:bg-slate-700/60"
+            aria-label="Brak linku projektu"
+          >
+            <FaExternalLinkAlt className="text-xs" />
+            Brak linku projektu
+          </a>
+        )}
+      </section>
+
       {/* Roadmap Timeline */}
       <div className="space-y-4">
         {stages.map((stage, index) => (
