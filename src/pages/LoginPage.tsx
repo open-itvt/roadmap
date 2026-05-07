@@ -13,7 +13,6 @@ export function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  const [useWebAuthn, setUseWebAuthn] = useState(false)
 
   const base64UrlToBuffer = (value: string): ArrayBuffer => {
     const normalized = value.replace(/-/g, '+').replace(/_/g, '/')
@@ -186,13 +185,6 @@ export function LoginPage() {
             {loading ? 'Authenticating...' : (<><FaKey className="inline-block mr-2" /> Passkey / WebAuthn</>)}
           </button>
 
-          <button
-            type="button"
-            onClick={() => setUseWebAuthn(!useWebAuthn)}
-            className="w-full px-4 py-2 bg-slate-900/50 text-slate-400 rounded text-sm hover:text-slate-300 transition"
-          >
-            {useWebAuthn ? 'Back to password login' : 'Need setup?'}
-          </button>
         </div>
       </div>
     </div>

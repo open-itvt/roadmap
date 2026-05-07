@@ -25,6 +25,14 @@ function isLocalAuthEnabled(): boolean {
   return String(process.env.LOCAL_AUTH || '').toLowerCase() === 'yes'
 }
 
+function getLocalAuthEnv() {
+  return {
+    admin: process.env.LOCAL_admin || process.env.LOCAL_ADMIN || '',
+    pass: process.env.LOCAL_PASS || process.env.LOCAL_pass || '',
+    otp: process.env.LOCAL_OTP || process.env.LOCAL_otp || '',
+  }
+}
+
 export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return
 
@@ -121,17 +129,25 @@ async function handleLogin(req: any, res: any) {
     }
 
     if (isLocalAuthEnabled()) {
-      const localAdmin = process.env.LOCAL_admin
-      const localPass = process.env.LOCAL_PASS
-      const localOtp = process.env.LOCAL_OTP
+      const { admin: localAdmin, pass: localPass, otp: localOtp } = getLocalAuthEnv()
 
       if (!localAdmin || !localPass || !localOtp) {
-        res.status(500).json({ error: 'LOCAL_AUTH is enabled but LOCAL_admin, LOCAL_PASS or LOCAL_OTP is missing' })
+        res.status(500).json({ error: 'LOCAL_AUTH is enabled but LOCAL_admin/LOCAL_ADMIN, LOCAL_PASS/LOCAL_pass or LOCAL_OTP/LOCAL_otp is missing' })
         return
       }
 
-      if (String(username) !== localAdmin || String(password) !== localPass || String(totpCode) !== localOtp) {
-        res.status(401).json({ error: 'Invalid credentials' })
+      if (String(username).trim() !== String(localAdmin).trim()) {
+        res.status(401).json({ error: 'Invalid LOCAL_AUTH username' })
+        return
+      }
+
+      if (String(password) !== String(localPass)) {
+        res.status(401).json({ error: 'Invalid LOCAL_AUTH password' })
+        return
+      }
+
+      if (String(totpCode).trim() !== String(localOtp).trim()) {
+        res.status(401).json({ error: 'Invalid LOCAL_AUTH OTP code' })
         return
       }
 
