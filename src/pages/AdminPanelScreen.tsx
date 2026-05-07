@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   FaBars,
   FaChevronDown,
@@ -553,6 +553,9 @@ export function AdminPanelScreen() {
   const [stageLinks, setStageLinks] = useState<Link[]>([])
   const [projectPrimaryLink, setProjectPrimaryLink] = useState<Link | null>(null)
   const [showProjectSelector, setShowProjectSelector] = useState(false)
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
+  const selectorRef = useRef<HTMLDivElement | null>(null)
+  const projectButtonRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const [editingLinkId, setEditingLinkId] = useState<string | null>(null)
   const [linkFormData, setLinkFormData] = useState<{
     title: string
@@ -846,6 +849,43 @@ export function AdminPanelScreen() {
     void loadLinksForStage(selectedProject.id, nextStageId)
     void loadProjectLinks(selectedProject.id)
   }, [selectedProject, selectedLinkStageId, stages, loadLinksForStage])
+
+  // Close selector when clicking outside and manage initial focus
+  useEffect(() => {
+    if (!showProjectSelector) return
+
+    const onDocClick = (ev: MouseEvent) => {
+      if (!selectorRef.current) return
+      if (!(ev.target instanceof Node)) return
+      if (!selectorRef.current.contains(ev.target)) {
+        setShowProjectSelector(false)
+      }
+    }
+
+    document.addEventListener('mousedown', onDocClick)
+
+    // set initial highlighted index and focus
+    const idx = Math.max(0, projects.findIndex((p) => p.id === selectedProject?.id))
+    setHighlightedIndex(idx)
+    setTimeout(() => {
+      const pid = projects[idx]?.id
+      const el = pid ? projectButtonRefs.current[pid] : null
+      el?.focus()
+    }, 0)
+
+    return () => {
+      document.removeEventListener('mousedown', onDocClick)
+    }
+  }, [showProjectSelector, projects, selectedProject])
+
+  useEffect(() => {
+    if (highlightedIndex >= 0 && projects[highlightedIndex]) {
+      const pid = projects[highlightedIndex].id
+      const el = projectButtonRefs.current[pid]
+      el?.scrollIntoView({ block: 'nearest' })
+      el?.focus()
+    }
+  }, [highlightedIndex, projects])
 
   const handleLinkSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -1194,19 +1234,49 @@ export function AdminPanelScreen() {
           <FaChevronDown className="text-slate-400" />
         </button>
         {showProjectSelector && (
-          <div className="mt-2 rounded-xl border border-slate-700/20 bg-white/[0.02] p-2">
-            {projects.map((project) => (
+          <div
+            ref={selectorRef}
+            onKeyDown={(e) => {
+              if (e.key === 'ArrowDown') {
+                e.preventDefault()
+                setHighlightedIndex((i) => Math.min(i + 1, projects.length - 1))
+              }
+              if (e.key === 'ArrowUp') {
+                e.preventDefault()
+                setHighlightedIndex((i) => Math.max(i - 1, 0))
+              }
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                if (highlightedIndex >= 0 && projects[highlightedIndex]) {
+                  const p = projects[highlightedIndex]
+                  setSelectedProject(p)
+                  setShowProjectSelector(false)
+                }
+              }
+              if (e.key === 'Escape') {
+                setShowProjectSelector(false)
+              }
+            }}
+            tabIndex={-1}
+            className="mt-2 rounded-xl border border-slate-700/20 bg-white/[0.02] p-2 outline-none"
+          >
+            {projects.map((project, idx) => (
               <button
                 key={project.id}
+                ref={(el) => (projectButtonRefs.current[project.id] = el)}
+                onMouseEnter={() => setHighlightedIndex(idx)}
+                onFocus={() => setHighlightedIndex(idx)}
                 onClick={() => {
                   setSelectedProject(project)
                   setShowProjectSelector(false)
                 }}
                 className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-sm font-medium transition ${
-                  selectedProject?.id === project.id ? 'bg-violet-500/10 text-white' : 'text-slate-300 hover:bg-white/5'
+                  highlightedIndex === idx ? 'bg-violet-500/10 text-white' : selectedProject?.id === project.id ? 'bg-violet-500/05 text-white' : 'text-slate-300 hover:bg-white/5'
                 }`}
               >
-                <span className="grid h-7 w-7 place-items-center rounded-md bg-white/6 text-sm flex-shrink-0">{renderProjectIcon(project.icon)}</span>
+                <span className={`grid h-7 w-7 place-items-center rounded-md text-sm flex-shrink-0 bg-gradient-to-br ${PROJECT_GRADIENTS[idx % PROJECT_GRADIENTS.length]}`}>
+                  {renderProjectIcon(project.icon)}
+                </span>
                 <span className="truncate">{project.name}</span>
               </button>
             ))}
