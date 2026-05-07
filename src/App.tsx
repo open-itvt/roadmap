@@ -30,13 +30,34 @@ function SetupRoute({ children }: { children: ReactNode }) {
   return <>{children}</>
 }
 
+function HomeRoute() {
+  const { isAuthenticated, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-slate-950">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (isAuthenticated) {
+    return <Navigate to="/roadmap-manage" replace />
+  }
+
+  return <PublicView />
+}
+
 function App() {
   return (
     <Router>
       <AuthProvider>
         <Routes>
           {/* Public routes */}
-          <Route path="/" element={<PublicView />} />
+          <Route path="/" element={<HomeRoute />} />
           <Route path="/auth/login" element={<LoginPage />} />
           <Route path="/auth/bypass-tmp" element={<DevBypassPage />} />
           <Route path="/demo" element={<DemoPage />} />
