@@ -2,7 +2,7 @@ import {
   getStagesByProjectId,
   createStage,
   getProjectById,
-} from '../../_shared'
+} from '../../_shared.js'
 
 export default async function handler(req: any, res: any) {
   const { projectId } = req.query

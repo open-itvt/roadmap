@@ -8,8 +8,8 @@ import {
   generateAuthenticationOptions,
   verifyAuthenticationResponse,
 } from '@simplewebauthn/server'
-import redis from '../_upstashClient'
-import { handleCors } from '../_cors'
+import redis from '../_upstashClient.js'
+import { handleCors } from '../_cors.js'
 import {
   getAllAdmins,
   getAdminByUsername,
@@ -20,7 +20,7 @@ import {
   saveAdmin,
   deleteSession,
   getSessionFromToken,
-} from './_shared'
+} from './_shared.js'
 
 function isLocalAuthEnabled(): boolean {
   return process.env.NODE_ENV === 'development' && String(process.env.LOCAL_AUTH || '').toLowerCase() === 'yes'

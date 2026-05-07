@@ -1,4 +1,4 @@
-import { updateLink, deleteLink, getLinksFromRedis, getStageById, getProjectById } from '../../../../_shared'
+import { updateLink, deleteLink, getLinksFromRedis, getStageById, getProjectById } from '../../../../_shared.js'
 
 export default async function handler(req: any, res: any) {
   const { projectId, stageId, linkId } = req.query

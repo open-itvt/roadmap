@@ -1,4 +1,4 @@
-import { getLinksByStageId, createLink, getStageById, getProjectById } from '../../../../_shared'
+import { getLinksByStageId, createLink, getStageById, getProjectById } from '../../../../_shared.js'
 
 export default async function handler(req: any, res: any) {
   const { projectId, stageId } = req.query

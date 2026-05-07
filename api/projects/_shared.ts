@@ -1,4 +1,4 @@
-import redis from '../_upstashClient'
+import redis from '../_upstashClient.js'
 import { v4 as uuid } from 'uuid'
 import type { Project, Stage, Link } from '@/types'
 

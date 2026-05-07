@@ -1,4 +1,4 @@
-import { handleCors } from '../_cors'
+import { handleCors } from '../_cors.js'
 
 export default async function handler(req: any, res: any) {
   if (handleCors(req, res)) return

@@ -1,6 +1,6 @@
-import redis from '../_upstashClient'
-import { handleCors } from '../_cors'
-import { getProjectsFromRedis, saveProjectsToRedis, saveStagestoRedis } from '../projects/_shared'
+import redis from '../_upstashClient.js'
+import { handleCors } from '../_cors.js'
+import { getProjectsFromRedis, saveProjectsToRedis, saveStagestoRedis } from '../projects/_shared.js'
 import type { Project, Stage } from '@/types'
 
 const SAMPLE_PROJECT: Project = {

@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken'
-import redis from '../_upstashClient'
+import redis from '../_upstashClient.js'
 
 export interface AdminRecord {
   username: string
