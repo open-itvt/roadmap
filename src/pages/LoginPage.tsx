@@ -6,7 +6,7 @@ import { authApi } from '@/api/auth'
 
 export function LoginPage() {
   const navigate = useNavigate()
-  const { login } = useAuth()
+  const { login, checkAuth } = useAuth()
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   const [totpCode, setTotpCode] = useState('')
@@ -41,6 +41,7 @@ export function LoginPage() {
 
     try {
       await login(username, password, totpCode)
+      await checkAuth()
       navigate('/roadmap-manage', { replace: true })
     } catch (err: unknown) {
       const rawError = (err as any)?.response?.data?.error || 'Login failed. Please try again.'
@@ -87,6 +88,7 @@ export function LoginPage() {
       })
 
       localStorage.setItem('sessionToken', response.sessionToken)
+      await checkAuth()
       navigate('/roadmap-manage', { replace: true })
     } catch (err: unknown) {
       setError((err as Error)?.message || 'WebAuthn authentication failed')

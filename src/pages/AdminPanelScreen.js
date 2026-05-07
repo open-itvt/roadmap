@@ -514,8 +514,10 @@ function AdminPanelScreen() {
                 teamSize: project.teamSize,
                 technologies: [...project.technologies],
                 goals: [...project.goals],
+                duplicateFromProjectId: project.id,
             });
             setProjects([...projects, duplicatedProject]);
+              setSelectedProject(duplicatedProject);
         }
         catch (error) {
             console.error('Failed to duplicate project:', error);

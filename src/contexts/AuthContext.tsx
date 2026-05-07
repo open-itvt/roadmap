@@ -46,13 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       const response = await authApi.login(username, password, totpCode)
       localStorage.setItem('sessionToken', response.sessionToken)
-      setState({
-        isAuthenticated: true,
-        adminId: response.adminId,
-        isSetupComplete: true,
-        adminExists: true,
-        loading: false,
-      })
+      await checkAuth()
     } catch (error) {
       console.error('Login failed:', error)
       throw error

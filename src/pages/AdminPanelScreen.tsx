@@ -891,6 +891,7 @@ export function AdminPanelScreen() {
         duplicateFromProjectId: project.id,
       })
       setProjects([...projects, duplicatedProject])
+      setSelectedProject(duplicatedProject)
     } catch (error) {
       console.error('Failed to duplicate project:', error)
     }

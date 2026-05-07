@@ -37,13 +37,7 @@ function AuthProvider({ children }) {
         try {
             const response = await auth_1.authApi.login(username, password, totpCode);
             localStorage.setItem('sessionToken', response.sessionToken);
-            setState({
-                isAuthenticated: true,
-                adminId: response.adminId,
-                isSetupComplete: true,
-                adminExists: true,
-                loading: false,
-            });
+            await checkAuth();
         }
         catch (error) {
             console.error('Login failed:', error);

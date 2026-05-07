@@ -8,7 +8,7 @@ const AuthContext_1 = require("@/contexts/AuthContext");
 const auth_1 = require("@/api/auth");
 function LoginPage() {
     const navigate = (0, react_router_dom_1.useNavigate)();
-    const { login } = (0, AuthContext_1.useAuth)();
+      const { login, checkAuth } = (0, AuthContext_1.useAuth)();
     const [username, setUsername] = (0, react_1.useState)('');
     const [password, setPassword] = (0, react_1.useState)('');
     const [totpCode, setTotpCode] = (0, react_1.useState)('');
@@ -39,6 +39,7 @@ function LoginPage() {
         setError('');
         try {
             await login(username, password, totpCode);
+              await checkAuth();
             navigate('/roadmap-manage', { replace: true });
         }
         catch (err) {
@@ -79,6 +80,7 @@ function LoginPage() {
                 type: publicKeyCredential.type,
             });
             localStorage.setItem('sessionToken', response.sessionToken);
+              await checkAuth();
             navigate('/roadmap-manage', { replace: true });
         }
         catch (err) {
