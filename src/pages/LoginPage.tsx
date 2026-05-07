@@ -118,6 +118,7 @@ export function LoginPage() {
               placeholder="admin"
               className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
               required
+              autoComplete="username"
             />
           </div>
 
@@ -131,6 +132,7 @@ export function LoginPage() {
                 placeholder="Enter password"
                 className="w-full px-4 py-2 bg-slate-900 border border-slate-700 rounded text-white placeholder-slate-500 focus:outline-none focus:border-blue-500"
                 required
+                autoComplete="current-password"
               />
               <button
                 type="button"
