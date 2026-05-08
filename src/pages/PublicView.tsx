@@ -21,92 +21,6 @@ import { renderProjectIcon } from '@/utils/icons'
 import type { Link, Project, Stage } from '@/types'
 import { linksApi, projectsApi, stagesApi } from '@/api/endpoints'
 
-// Sample data for development/demo
-const SAMPLE_PROJECTS: Project[] = [
-  {
-    id: 'mobile-app-1',
-    name: 'Aplikacja mobilna',
-    description: 'Aplikacja mobilna dla klientów, która umożliwia zarządzanie zamówieniami, przeglądanie ofert i kontakt z obsługą',
-    icon: 'mobile-app',
-    status: 'active',
-    priority: 'high',
-    progress: 65,
-    startDate: '2024-04-12',
-    lastUpdate: new Date().toISOString(),
-    teamSize: 4,
-    technologies: ['React Native', 'TypeScript', 'Node.js', 'Expo'],
-    goals: [
-      'Stworzenie intuicyjnej aplikacji mobilnej',
-      'Zapewnienie wysokiej wydajności i stabilności',
-      'Integracja z systemami zewnętrznymi',
-      'Wdrożenie w App Store i Google Play',
-    ],
-    createdAt: '2024-04-12T00:00:00Z',
-    updatedAt: new Date().toISOString(),
-  },
-]
-
-const SAMPLE_STAGES: Stage[] = [
-  {
-    id: 'stage-1',
-    projectId: 'mobile-app-1',
-    name: 'Analiza wymagań',
-    description: 'Zebranie i analiza wymagań projektowych',
-    status: 'completed',
-    icon: 'check',
-    order: 1,
-    progress: 100,
-    createdAt: '2024-04-12T00:00:00Z',
-    updatedAt: '2024-05-12T00:00:00Z',
-  },
-  {
-    id: 'stage-2',
-    projectId: 'mobile-app-1',
-    name: 'Projekt UI/UX',
-    description: 'Projektowanie interfejsu użytkownika',
-    status: 'completed',
-    icon: 'check',
-    order: 2,
-    progress: 100,
-    createdAt: '2024-05-12T00:00:00Z',
-    updatedAt: '2024-05-26T00:00:00Z',
-  },
-  {
-    id: 'stage-3',
-    projectId: 'mobile-app-1',
-    name: 'Implementacja',
-    description: 'Kodowanie i implementacja funkcjonalności',
-    status: 'in-progress',
-    icon: 'dot',
-    order: 3,
-    progress: 65,
-    createdAt: '2024-05-26T00:00:00Z',
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'stage-4',
-    projectId: 'mobile-app-1',
-    name: 'Testy',
-    description: 'Testowanie aplikacji',
-    status: 'pending',
-    icon: '4',
-    order: 4,
-    createdAt: '2024-05-26T00:00:00Z',
-    updatedAt: new Date().toISOString(),
-  },
-  {
-    id: 'stage-5',
-    projectId: 'mobile-app-1',
-    name: 'Wdrożenie',
-    description: 'Publikacja aplikacji w sklepach',
-    status: 'pending',
-    icon: '5',
-    order: 5,
-    createdAt: '2024-05-26T00:00:00Z',
-    updatedAt: new Date().toISOString(),
-  },
-]
-
 const LOADING_QUOTES = [
   'Planowanie to mapowanie przyszłości — chwila cierpliwości.',
   'Roadmapa: małe kroki prowadzące do dużych zmian.',
@@ -115,11 +29,16 @@ const LOADING_QUOTES = [
   'Każdy etap to dowód postępu — zaraz będzie lepiej.',
 ]
 
+const LOADING_QUOTE_ROTATION_MS = 4000
+const EMPTY_PROJECTS_MESSAGE = 'Nie znaleziono projektów. Odśwież stronę, aby załadować ponownie.'
+const DATABASE_UNAVAILABLE_MESSAGE =
+  'Błąd wewnętrzny: Baza danych jest niedostępna\nSkontaktuj się z administratorem strony, jeśli problem znów się powtarza'
+
 function randomQuote(): string {
   return LOADING_QUOTES[Math.floor(Math.random() * LOADING_QUOTES.length)]
 }
 
-const PUBLIC_ROADMAP_CACHE_KEY = 'roadmap-public-cache-v1'
+const PUBLIC_ROADMAP_CACHE_KEY = 'roadmap-public-cache-v2'
 const PUBLIC_ROADMAP_REFRESH_INTERVAL_MS = 30_000
 
 type PublicRoadmapSnapshot = {
@@ -128,18 +47,11 @@ type PublicRoadmapSnapshot = {
   loadedAt: number
 }
 
-let publicRoadmapCache: PublicRoadmapSnapshot | null = null
-
-function createSampleSnapshot(): PublicRoadmapSnapshot {
-  const sampleProjectId = SAMPLE_PROJECTS[0]?.id ?? ''
-  return {
-    projects: SAMPLE_PROJECTS,
-    stagesByProjectId: {
-      [sampleProjectId]: SAMPLE_STAGES.filter((stage) => stage.projectId === sampleProjectId),
-    },
-    loadedAt: Date.now(),
-  }
+type PublicRoadmapError = {
+  message: string
 }
+
+let publicRoadmapCache: PublicRoadmapSnapshot | null = null
 
 function readSnapshotFromStorage(): PublicRoadmapSnapshot | null {
   if (typeof window === 'undefined') {
@@ -200,7 +112,11 @@ async function loadPublicRoadmapSnapshot(): Promise<PublicRoadmapSnapshot> {
   const projects = await projectsApi.getAll()
 
   if (projects.length === 0) {
-    return createSampleSnapshot()
+    return {
+      projects: [],
+      stagesByProjectId: {},
+      loadedAt: Date.now(),
+    }
   }
 
   const stageEntries = await Promise.all(
@@ -247,6 +163,8 @@ export function PublicView() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(!cachedSnapshot)
   const [lastRefreshAt, setLastRefreshAt] = useState<number>(cachedSnapshot?.loadedAt ?? 0)
+  const [loadingQuote, setLoadingQuote] = useState(() => randomQuote())
+  const [loadError, setLoadError] = useState<PublicRoadmapError | null>(null)
   const selectedProjectStages = selectedProject ? stagesByProjectId[selectedProject.id] ?? [] : []
   const selectedProjectLinks = selectedProject ? getProjectGitHubLinks(selectedProjectStages) : []
   const primaryProjectLink = selectedProject?.projectLinkUrl ?? selectedProjectLinks[0]?.url ?? '#'
@@ -256,6 +174,7 @@ export function PublicView() {
     writeSnapshotToStorage(snapshot)
     setProjects(snapshot.projects)
     setStagesByProjectId(snapshot.stagesByProjectId)
+    setLoadError(null)
     setSelectedProject((current) => {
       if (current) {
         const matched = snapshot.projects.find((project) => project.id === current.id)
@@ -281,8 +200,9 @@ export function PublicView() {
         applySnapshot(snapshot)
       } catch (error) {
         console.error('Failed to load roadmap snapshot:', error)
-        if (!cancelled && !publicRoadmapCache) {
-          applySnapshot(createSampleSnapshot())
+        if (!cancelled) {
+          setLoadError({ message: DATABASE_UNAVAILABLE_MESSAGE })
+          setLoading(false)
         }
       }
     }
@@ -299,13 +219,56 @@ export function PublicView() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!loading) {
+      return
+    }
+
+    setLoadingQuote(randomQuote())
+    const intervalId = window.setInterval(() => {
+      setLoadingQuote(randomQuote())
+    }, LOADING_QUOTE_ROTATION_MS)
+
+    return () => {
+      window.clearInterval(intervalId)
+    }
+  }, [loading])
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-slate-950">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-slate-400">Loading...</p>
-          <p className="mt-2 text-xs text-slate-500">{randomQuote()}</p>
+          <p className="mt-2 text-xs text-slate-500">{loadingQuote}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-[#0a0d12] text-slate-100 flex items-center justify-center px-4">
+        <div className="w-full max-w-xl rounded-3xl border border-red-500/20 bg-[#0f141b] p-6 text-center shadow-[0_0_0_1px_rgba(15,23,42,0.75)]">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-red-500/10 text-red-300">
+            <FaExclamationTriangle />
+          </div>
+          <h1 className="text-xl font-semibold text-white">Nie udało się wczytać danych</h1>
+          <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-300">{loadError.message}</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (projects.length === 0) {
+    return (
+      <div className="min-h-screen bg-[#0a0d12] text-slate-100 flex items-center justify-center px-4">
+        <div className="w-full max-w-xl rounded-3xl border border-slate-800/80 bg-[#0f141b] p-6 text-center shadow-[0_0_0_1px_rgba(15,23,42,0.75)]">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-slate-200">
+            <FaGlobe />
+          </div>
+          <h1 className="text-xl font-semibold text-white">Brak projektów</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-300">{EMPTY_PROJECTS_MESSAGE}</p>
         </div>
       </div>
     )
