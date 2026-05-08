@@ -1218,18 +1218,6 @@ export function AdminPanelScreen() {
             <FaListUl className="text-violet-200" />
             Projekty
           </button>
-          <button
-            type="button"
-            onClick={() => handleTabChange('stages')}
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
-              activeTab === 'stages'
-                ? 'border border-violet-400/30 bg-violet-500/18 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.15)]'
-                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
-            }`}
-          >
-            <FaListUl className="text-violet-200" />
-            Etapy
-          </button>
           <a
             href="/"
             className="flex w-full items-center gap-3 rounded-xl border border-transparent px-3 py-2.5 text-left text-sm font-medium text-slate-300 transition hover:border-slate-700/30 hover:bg-white/5"
@@ -1311,6 +1299,18 @@ export function AdminPanelScreen() {
 
       <div className="px-3 py-4">
         <div className="space-y-1.5">
+          <button
+            type="button"
+            onClick={() => handleTabChange('stages')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'stages'
+                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
+            }`}
+          >
+            <FaListUl className="text-violet-200" />
+            Etapy
+          </button>
           <button
             type="button"
             onClick={() => handleTabChange('details')}
