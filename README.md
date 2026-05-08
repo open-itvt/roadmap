@@ -49,6 +49,7 @@ Current base path: `/api`
 
 Public/project data endpoints (currently no server-side session check in handlers):
 
+- `GET /api/check-cache`
 - `GET /api/projects`
 - `POST /api/projects`
 - `GET /api/projects/:projectId`
