@@ -219,6 +219,7 @@ interface ManagementTabContentProps {
   handleDragEnd: (event: DragEndEvent) => void
   selectedStage: Stage | null
   setSelectedStage: (stage: Stage) => void
+  view: 'projects' | 'stages'
 }
 
 function ManagementTabContent({
@@ -238,12 +239,13 @@ function ManagementTabContent({
   handleDragEnd,
   selectedStage,
   setSelectedStage,
+  view,
 }: ManagementTabContentProps) {
   const stageCountByProject = (projectId: string) => stages.filter((s) => s.projectId === projectId).length
 
   return (
     <div className="space-y-6 pb-10">
-      {/* Projects section */}
+      {view === 'projects' && (
       <section className="space-y-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
@@ -335,9 +337,9 @@ function ManagementTabContent({
           </div>
         )}
       </section>
+      )}
 
-      {/* Stages section - only show if project is selected */}
-      {selectedProject && (
+      {view === 'stages' && selectedProject && (
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -505,6 +507,14 @@ function ManagementTabContent({
         )}
       </section>
       )}
+
+      {view === 'stages' && !selectedProject && (
+        <section className="space-y-4">
+          <div className="rounded-2xl border border-slate-800/80 bg-[#0f141b] p-6 text-center">
+            <p className="text-slate-400">Wybierz projekt, aby zarządzać etapami</p>
+          </div>
+        </section>
+      )}
     </div>
   )
 }
@@ -569,11 +579,11 @@ export function AdminPanelScreen() {
     description: '',
     type: 'other',
   })
-  const [activeTab, setActiveTab] = useState<'management' | 'details' | 'links' | 'settings' | 'notes' | 'demo'>(
-    (typeof window !== 'undefined' && localStorage.getItem('roadmap-admin-active-tab')) as 'management' | 'details' | 'links' | 'settings' | 'notes' | 'demo' || 'management'
+  const [activeTab, setActiveTab] = useState<'projects' | 'stages' | 'details' | 'links' | 'settings' | 'notes' | 'demo'>(
+    (typeof window !== 'undefined' && localStorage.getItem('roadmap-admin-active-tab')) as 'projects' | 'stages' | 'details' | 'links' | 'settings' | 'notes' | 'demo' || 'projects'
   )
 
-  const handleTabChange = (tab: 'management' | 'details' | 'links' | 'settings' | 'notes' | 'demo') => {
+  const handleTabChange = (tab: 'projects' | 'stages' | 'details' | 'links' | 'settings' | 'notes' | 'demo') => {
     setActiveTab(tab)
     if (typeof window !== 'undefined') {
       localStorage.setItem('roadmap-admin-active-tab', tab)
@@ -1194,19 +1204,31 @@ export function AdminPanelScreen() {
       </div>
 
       <div className="px-4 py-4">
-        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Zarządzanie</div>
+        <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.22em] text-slate-500">Nawigacja</div>
         <div className="space-y-1.5">
           <button
             type="button"
-            onClick={() => handleTabChange('management')}
+            onClick={() => handleTabChange('projects')}
             className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
-              activeTab === 'management'
+              activeTab === 'projects'
                 ? 'border border-violet-400/30 bg-violet-500/18 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.15)]'
                 : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
             }`}
           >
             <FaListUl className="text-violet-200" />
             Projekty
+          </button>
+          <button
+            type="button"
+            onClick={() => handleTabChange('stages')}
+            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
+              activeTab === 'stages'
+                ? 'border border-violet-400/30 bg-violet-500/18 text-white shadow-[0_0_0_1px_rgba(139,92,246,0.15)]'
+                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
+            }`}
+          >
+            <FaListUl className="text-violet-200" />
+            Etapy
           </button>
           <a
             href="/"
@@ -1289,18 +1311,6 @@ export function AdminPanelScreen() {
 
       <div className="px-3 py-4">
         <div className="space-y-1.5">
-          <button
-            type="button"
-            onClick={() => handleTabChange('management')}
-            className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition ${
-              activeTab === 'management'
-                ? 'border border-violet-400/30 bg-violet-500/15 text-white'
-                : 'border border-transparent text-slate-300 hover:border-slate-700/30 hover:bg-white/5'
-            }`}
-          >
-            <FaListUl className="text-violet-200" />
-            Etapy
-          </button>
           <button
             type="button"
             onClick={() => handleTabChange('details')}
@@ -1460,7 +1470,7 @@ export function AdminPanelScreen() {
           </div>
 
           {/* Tab content */}
-          {activeTab === 'management' && (
+          {activeTab === 'projects' && (
             <ManagementTabContent
               projects={projects}
               stages={stages}
@@ -1478,6 +1488,29 @@ export function AdminPanelScreen() {
               handleDragEnd={handleDragEnd}
               selectedStage={selectedStage}
               setSelectedStage={setSelectedStage}
+              view="projects"
+            />
+          )}
+
+          {activeTab === 'stages' && (
+            <ManagementTabContent
+              projects={projects}
+              stages={stages}
+              selectedProject={selectedProject}
+              setSelectedProject={setSelectedProject}
+              resetProjectForm={resetProjectForm}
+              resetStageForm={resetStageForm}
+              handleDuplicateProject={handleDuplicateProject}
+              handleDeleteStage={handleDeleteStage}
+              selectedProjectStages={selectedProjectStages}
+              editingStage={editingStage}
+              setEditingStage={setEditingStage}
+              handleSaveStageChanges={handleSaveStageChanges}
+              sensors={sensors}
+              handleDragEnd={handleDragEnd}
+              selectedStage={selectedStage}
+              setSelectedStage={setSelectedStage}
+              view="stages"
             />
           )}
 
